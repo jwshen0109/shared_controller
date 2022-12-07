@@ -1,0 +1,5 @@
+<launch>
+	<node name="force_control" pkg="ur5e_test" type="ur5e_test" output="screen"/>
+
+
+</launch>

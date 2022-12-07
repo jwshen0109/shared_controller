@@ -1,0 +1,4 @@
+<launch>
+	<node name="testMPC" pkg="ur5e_test" type="ur5e_test" output="screen"/>
+
+</launch>
