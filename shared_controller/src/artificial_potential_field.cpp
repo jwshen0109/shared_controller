@@ -44,41 +44,26 @@ VirtualFixture::VirtualFixture()
     vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/phase0/vf_force", 1);
 }
 
-vector<float> VirtualFixture::minDistancePoint(vector<float> &p0, vector<float> &ptarget)
+vector<float> VirtualFixture::minDistancePoint(Point &p0, Cylinder &C0)
 {
     vector<float> p_result(3, 0.0);
-
-    float delta_x = p0[0] - ptarget[0];
-    float delta_y = p0[1] - ptarget[1];
-    float minDis = sqrt(pow(delta_x, 2.0) + pow(delta_y, 2.0)) - 100;
-    float sin_theta = delta_y / minDis;
-
-    p_result[0] = minDis * sin_theta;
-    p_result[1] = sqrt(pow(minDis, 2) - pow(delta_y, 2));
-    p_result[2] = 0.0;
-
-    if (delta_x >= 0)
+    float d_r = sqrt(pow(p0.x - C0.x, 2) + pow(p0.y - C0.y, 2));
+    float dis_min = d_r - C0.R;
+    if (dis_min < 0)
     {
-        if (delta_y < 0)
-        {
-            // p_result[1] = 1;
-            p_result[1] = -p_result[1];
-        }
+        return p_result;
     }
-    else
-    {
-        p_result[0] = -p_result[0];
-        if (delta_y < 0)
-        {
-            p_result[1] = -p_result[1];
-        }
-    }
+    float dis_min_x = (p0.x - C0.x) / d_r * dis_min;
+    float dis_min_y = (p0.y - C0.y) / d_r * dis_min;
+    p_result[0] = dis_min_x;
+    p_result[1] = dis_min_y;
+
     return p_result;
 }
 
-void VirtualFixture::PublishVirtualForce(vector<float> &p0, vector<float> &ptarget)
+void VirtualFixture::PublishVirtualForce(Point &p0, Cylinder &C0)
 {
-    vector<float> p_result = minDistancePoint(p0, ptarget);
+    vector<float> p_result = minDistancePoint(p0, C0);
     geometry_msgs::WrenchStamped virtual_force;
 
     virtual_force.header.frame_id = "base_link";

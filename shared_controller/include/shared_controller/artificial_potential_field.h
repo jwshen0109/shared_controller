@@ -28,6 +28,19 @@ public:
     float z;
 };
 
+class Cylinder
+{
+public:
+    Cylinder(float _x, float _y, float _R) : x(_x), y(_y), R(_R)
+    {
+    }
+
+public:
+    float x;
+    float y;
+    float R;
+};
+
 class forceVector
 {
 public:
@@ -71,8 +84,8 @@ class VirtualFixture
 {
 public:
     VirtualFixture();
-    vector<float> minDistancePoint(vector<float> &p0, vector<float> &ptarget);
-    void VirtualFixture::PublishVirtualForce(vector<float> &p0, vector<float> &ptarget);
+    vector<float> minDistancePoint(Point &p0, Cylinder &C0);
+    void PublishVirtualForce(Point &p0, Cylinder &C0);
 
 public:
     ros::NodeHandle nh;

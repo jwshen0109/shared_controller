@@ -16,6 +16,8 @@
 #include <vector>
 #include <cmath>
 
+#include "shared_controller/artificial_potential_field.h"
+
 using namespace std;
 
 struct dynamic_reconfigure_params
@@ -84,6 +86,11 @@ public:
     Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
 
     std::vector<double> toEulerAngle(Eigen::Quaterniond &q);
+
+public:
+    Point *p_current;
+    Cylinder *target_cylinder;
+    VirtualFixture vf;
 
 private:
     ros::NodeHandle nh;

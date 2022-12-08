@@ -96,6 +96,8 @@ TeleManipulation::TeleManipulation()
     // path config
     // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
     // server.setCallback(f);
+    target_cylinder = new Cylinder(0, 0.4, 0.1);
+    p_current = new Point(0, 0, 0);
 }
 
 void TeleManipulation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -114,6 +116,10 @@ void TeleManipulation::current_pose_callback_right(const geometry_msgs::PoseStam
     {
         first_flag_right = 2;
     }
+    p_current->x = current_pose_right.pose.position.x;
+    p_current->y = current_pose_right.pose.position.y;
+    p_current->z = current_pose_right.pose.position.z;
+    vf.PublishVirtualForce(*p_current, *target_cylinder);
 }
 
 // void TeleManipulation::configCallback(sigma_client::PathGenerationConfig &config, uint32_t level)
