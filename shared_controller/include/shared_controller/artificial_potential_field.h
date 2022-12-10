@@ -91,7 +91,7 @@ public:
     ros::NodeHandle nh;
     ros::Publisher vfForce_pub;
 
-    float eta = 0.2;
+    float eta = 20;
 };
 
 #endif // _ARTIFICIAL_POTENTIAL_FIELD_H

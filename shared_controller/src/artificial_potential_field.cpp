@@ -41,7 +41,7 @@ float APF::porcess(float cur_velocity, Point &p_target, Point &p_current)
 VirtualFixture::VirtualFixture()
 {
     // TODO:
-    vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/phase0/vf_force", 1);
+    vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/sigma/force_feedback", 1);
 }
 
 vector<float> VirtualFixture::minDistancePoint(Point &p0, Cylinder &C0)

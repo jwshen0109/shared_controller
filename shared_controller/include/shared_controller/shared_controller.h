@@ -64,10 +64,10 @@ private:
     vector<int> button_states = vector<int>(2, 0.0);
 };
 
-class TeleManipulation
+class TeleOperation
 {
 public:
-    TeleManipulation();
+    TeleOperation();
 
     void callback_left(const geometry_msgs::PoseStampedConstPtr &last_msgs_left);
 

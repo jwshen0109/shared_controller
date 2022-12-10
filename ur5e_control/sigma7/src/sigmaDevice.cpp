@@ -18,7 +18,6 @@ int SigmaDevice::id = -1;
 // Constructor
 //-----------------------------------------------------------------------
 SigmaDevice::SigmaDevice(ros::NodeHandle n, const std::string ns)
-    : new_wrench_msg(false)
 {
     id++;
 
@@ -52,7 +51,6 @@ void SigmaDevice::WrenchCallback(
 {
     // newDataDirect = true;
     wrench.wrench = msg->wrench;
-    new_wrench_msg = true;
 }
 
 //------------------------------------------------------------------------------
@@ -189,7 +187,7 @@ void SigmaDevice::HandleWrench()
 {
     dhdSetGravityCompensation(DHD_ON, (char)id);
     // should we use new_wrench_msg?
-    if (buttons_state[1] == 1)
+    if (buttons_state[0] == 1)
     {
         if (dhdSetForceAndTorqueAndGripperForce(wrench.wrench.force.x,
                                                 wrench.wrench.force.y,
@@ -201,7 +199,7 @@ void SigmaDevice::HandleWrench()
         {
             printf("error: cannot set force (%s)\n", dhdErrorGetLastStr());
         }
-        dhdGetOrientationRad(&locked_orient[0], &locked_orient[1], &locked_orient[2]);
+        // dhdGetOrientationRad(&locked_orient[0], &locked_orient[1], &locked_orient[2]);
     }
     else if (lock_orient)
     {

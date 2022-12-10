@@ -74,7 +74,7 @@ void SharedController::configCallback(shared_controller::commandConfig &config, 
     drp.scale = config.scale;
 }
 
-TeleManipulation::TeleManipulation()
+TeleOperation::TeleOperation()
 {
     // topic to cartesian controllers
     target_pub_left = nh.advertise<geometry_msgs::PoseStamped>("/left/cartesian_motion_controller/target_frame", 1);
@@ -83,24 +83,24 @@ TeleManipulation::TeleManipulation()
     // path_pub_right = nh.advertise<nav_msgs::Path>("/right/path", 1);
     // subscribe from sigma7 devices
     // pose
-    sub_sigma_left = nh.subscribe("/sigma7/sigma1/pose", 1, &TeleManipulation::callback_left, this);
-    sub_sigma_right = nh.subscribe("/sigma7/sigma0/pose", 1, &TeleManipulation::callback_right, this);
+    sub_sigma_left = nh.subscribe("/sigma7/sigma1/pose", 1, &TeleOperation::callback_left, this);
+    sub_sigma_right = nh.subscribe("/sigma7/sigma0/pose", 1, &TeleOperation::callback_right, this);
     // buttons
-    sub_sigma_button_left = nh.subscribe("/sigma7/sigma1/buttons", 1, &TeleManipulation::callback_button_left, this);
-    sub_sigma_button_right = nh.subscribe("/sigma7/sigma0/buttons", 1, &TeleManipulation::callback_button_right, this);
+    sub_sigma_button_left = nh.subscribe("/sigma7/sigma1/buttons", 1, &TeleOperation::callback_button_left, this);
+    sub_sigma_button_right = nh.subscribe("/sigma7/sigma0/buttons", 1, &TeleOperation::callback_button_right, this);
 
     // subscribe current state
-    sub_current_pose_left = nh.subscribe("/left/cartesian_motion_controller/current_pose", 1, &TeleManipulation::current_pose_callback_left, this);
-    sub_current_pose_right = nh.subscribe("/right/cartesian_motion_controller/current_pose", 1, &TeleManipulation::current_pose_callback_right, this);
+    sub_current_pose_left = nh.subscribe("/left/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_left, this);
+    sub_current_pose_right = nh.subscribe("/right/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_right, this);
 
     // path config
     // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
     // server.setCallback(f);
-    target_cylinder = new Cylinder(0, 0.4, 0.1);
+    target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     p_current = new Point(0, 0, 0);
 }
 
-void TeleManipulation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
+void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
 {
     current_pose_left.pose = msgs->pose;
     if (first_flag_left == 0)
@@ -109,17 +109,13 @@ void TeleManipulation::current_pose_callback_left(const geometry_msgs::PoseStamp
     }
 }
 
-void TeleManipulation::current_pose_callback_right(const geometry_msgs::PoseStampedConstPtr &msgs)
+void TeleOperation::current_pose_callback_right(const geometry_msgs::PoseStampedConstPtr &msgs)
 {
     current_pose_right.pose = msgs->pose;
     if (first_flag_right == 0)
     {
         first_flag_right = 2;
     }
-    p_current->x = current_pose_right.pose.position.x;
-    p_current->y = current_pose_right.pose.position.y;
-    p_current->z = current_pose_right.pose.position.z;
-    vf.PublishVirtualForce(*p_current, *target_cylinder);
 }
 
 // void TeleManipulation::configCallback(sigma_client::PathGenerationConfig &config, uint32_t level)
@@ -128,7 +124,7 @@ void TeleManipulation::current_pose_callback_right(const geometry_msgs::PoseStam
 //   // ROS_INFO("here...");
 // }
 
-void TeleManipulation::callback_left(const geometry_msgs::PoseStampedConstPtr &last_msgs_left)
+void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last_msgs_left)
 {
 
     // sigma transform axis--z -90degree
@@ -251,7 +247,7 @@ void TeleManipulation::callback_left(const geometry_msgs::PoseStampedConstPtr &l
     last_sigma_left.pose.orientation.w = q_target_left.w();
 }
 
-void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &last_msgs_right)
+void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &last_msgs_right)
 {
 
     q_transform_right.x() = 0.0;
@@ -270,7 +266,7 @@ void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &
     geometry_msgs::PoseStamped target_pose_right;
 
     target_pose_right.header.stamp = ros::Time::now();
-    target_pose_right.header.frame_id = "right_base_link";
+    target_pose_right.header.frame_id = "base_link";
 
     delta_position[3] = last_msgs_right->pose.position.x - last_sigma_right.pose.position.x;
     delta_position[4] = last_msgs_right->pose.position.y - last_sigma_right.pose.position.y;
@@ -287,7 +283,7 @@ void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &
 
     delta_q_right = q_cur_right * q_last_right.conjugate();
 
-    if (first_flag_right == 2 && button_right == 0)
+    if (first_flag_right == 0 && button_right == 0)
     {
 
         target_pose_right.pose.position.x = 0.4;
@@ -305,6 +301,10 @@ void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &
         // target_pose_right.pose.orientation.z = current_pose_right.pose.orientation.z;
         // target_pose_right.pose.orientation.w = current_pose_right.pose.orientation.w;
         target_pub_right.publish(target_pose_right);
+
+        p_current->x = target_pose_right.pose.position.x;
+        p_current->y = target_pose_right.pose.position.y;
+        p_current->z = target_pose_right.pose.position.z;
         last_pose_right.pose = target_pose_right.pose;
         first_flag_right = 1;
     }
@@ -332,13 +332,21 @@ void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &
 
         target_pub_right.publish(target_pose_right);
         last_pose_right.pose = target_pose_right.pose;
+
+        p_current->x = target_pose_right.pose.position.x;
+        p_current->y = target_pose_right.pose.position.y;
+        p_current->z = target_pose_right.pose.position.z;
     }
     else
     {
 
         last_pose_right.header.stamp = ros::Time::now();
-        last_pose_right.header.frame_id = "right_base_link";
+        last_pose_right.header.frame_id = "base_link";
         target_pub_right.publish(last_pose_right);
+
+        p_current->x = last_pose_right.pose.position.x;
+        p_current->y = last_pose_right.pose.position.y;
+        p_current->z = last_pose_right.pose.position.z;
     }
 
     last_sigma_right.pose.position = last_msgs_right->pose.position;
@@ -346,19 +354,21 @@ void TeleManipulation::callback_right(const geometry_msgs::PoseStampedConstPtr &
     last_sigma_right.pose.orientation.y = q_target_right.y();
     last_sigma_right.pose.orientation.z = q_target_right.z();
     last_sigma_right.pose.orientation.w = q_target_right.w();
+
+    vf.PublishVirtualForce(*p_current, *target_cylinder);
 }
 
-void TeleManipulation::callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left)
+void TeleOperation::callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left)
 {
     button_left = last_button_left->buttons[0];
 }
 
-void TeleManipulation::callback_button_right(const sensor_msgs::JoyConstPtr &last_button_right)
+void TeleOperation::callback_button_right(const sensor_msgs::JoyConstPtr &last_button_right)
 {
     button_right = last_button_right->buttons[0];
 }
 
-Eigen::Quaterniond TeleManipulation::scaleRotation(Eigen::Quaterniond &q_current, double scale)
+Eigen::Quaterniond TeleOperation::scaleRotation(Eigen::Quaterniond &q_current, double scale)
 {
     Eigen::Quaterniond scale_q;
     std::vector<double> eulerAngles = toEulerAngle(q_current);
@@ -376,7 +386,7 @@ Eigen::Quaterniond TeleManipulation::scaleRotation(Eigen::Quaterniond &q_current
     return scale_q;
 }
 
-vector<double> TeleManipulation::toEulerAngle(Eigen::Quaterniond &q)
+vector<double> TeleOperation::toEulerAngle(Eigen::Quaterniond &q)
 {
     std::vector<double> eulerAngles(3);
     // roll (x-axis rotation)
@@ -404,17 +414,18 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "shared_controller");
 
-    SharedController sc;
-    ros::Rate loop_rate(100);
-    // ros::AsyncSpinner spinner(2);
-    // spinner.start();
-    // ros::waitForShutdown();
-    while (ros::ok())
-    {
-        sc.publishFtSensorForce();
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    // SharedController sc;
+    TeleOperation tm;
+    // ros::Rate loop_rate(100);
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
+    ros::waitForShutdown();
+    // while (ros::ok())
+    // {
+    //     sc.publishFtSensorForce();
+    //     ros::spinOnce();
+    //     loop_rate.sleep();
+    // }
 
     return 0;
 }
