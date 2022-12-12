@@ -1,9 +1,6 @@
 [submodule "realsense-ros"]
 	path = realsense-ros
 	url = https://github.com/jwshen0109/realsense-ros.git
-[submodule "Universal_Robots_ROS_Driver"]
-	path = Universal_Robots_ROS_Driver
-	url = https://github.com/jwshen0109/Universal_Robots_ROS_Driver.git
 [submodule "cartesian_controllers"]
 	path = cartesian_controllers
 	url = https://github.com/jwshen0109/cartesian_controllers.git
