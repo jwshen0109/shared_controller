@@ -92,7 +92,7 @@ public:
     ros::Publisher vfForce_pub;
 
     float eta_p = 20;
-    float eta_v = 20;
+    float eta_v = 15;
 };
 
 #endif // _ARTIFICIAL_POTENTIAL_FIELD_H
