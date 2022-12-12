@@ -61,7 +61,7 @@ vector<float> VirtualFixture::minDistancePoint(Point &p0, Cylinder &C0)
     return p_result;
 }
 
-void VirtualFixture::PublishVirtualForce(Point &p0, Cylinder &C0)
+void VirtualFixture::PublishVirtualForce(Point &p0, Cylinder &C0, vector<float> &velocity)
 {
     vector<float> p_result = minDistancePoint(p0, C0);
     geometry_msgs::WrenchStamped virtual_force;
@@ -69,9 +69,9 @@ void VirtualFixture::PublishVirtualForce(Point &p0, Cylinder &C0)
     virtual_force.header.frame_id = "base_link";
     virtual_force.header.stamp = ros::Time::now();
 
-    virtual_force.wrench.force.x = p_result[0] * eta;
-    virtual_force.wrench.force.y = p_result[1] * eta;
-    virtual_force.wrench.force.z = p_result[2] * eta;
+    virtual_force.wrench.force.x = p_result[0] * eta_p + velocity[0] * eta_v;
+    virtual_force.wrench.force.y = p_result[1] * eta_p + velocity[1] * eta_v;
+    virtual_force.wrench.force.z = p_result[2] * eta_p + velocity[2] * eta_v;
     virtual_force.wrench.torque.x = 0.0;
     virtual_force.wrench.torque.y = 0.0;
     virtual_force.wrench.torque.z = 0.0;

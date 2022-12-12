@@ -72,6 +72,9 @@ void SharedController::configCallback(shared_controller::commandConfig &config, 
     // goal = config.goal_select;
     drp.ref_force_x = config.ref_force_x;
     drp.scale = config.scale;
+    drp.eta_p = config.eta_p;
+    drp.eta_v = config.eta_v;
+    drp.radius = config.cylinder_radius;
 }
 
 TeleOperation::TeleOperation()
@@ -93,9 +96,11 @@ TeleOperation::TeleOperation()
     sub_current_pose_left = nh.subscribe("/left/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_left, this);
     sub_current_pose_right = nh.subscribe("/right/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_right, this);
 
-    // path config
+    // dynamic param config
     // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
     // server.setCallback(f);
+
+    // APF init
     target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     p_current = new Point(0, 0, 0);
 }
@@ -249,6 +254,7 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
 
 void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &last_msgs_right)
 {
+    vector<float> cur_vel(3, 0.0);
 
     q_transform_right.x() = 0.0;
     q_transform_right.y() = 0.0;
@@ -302,9 +308,11 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         // target_pose_right.pose.orientation.w = current_pose_right.pose.orientation.w;
         target_pub_right.publish(target_pose_right);
 
+        // calculate APF
         p_current->x = target_pose_right.pose.position.x;
         p_current->y = target_pose_right.pose.position.y;
         p_current->z = target_pose_right.pose.position.z;
+
         last_pose_right.pose = target_pose_right.pose;
         first_flag_right = 1;
     }
@@ -336,6 +344,9 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         p_current->x = target_pose_right.pose.position.x;
         p_current->y = target_pose_right.pose.position.y;
         p_current->z = target_pose_right.pose.position.z;
+        cur_vel[0] = -delta_position[4];
+        cur_vel[1] = delta_position[3];
+        cur_vel[2] = delta_position[5];
     }
     else
     {
@@ -355,7 +366,10 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     last_sigma_right.pose.orientation.z = q_target_right.z();
     last_sigma_right.pose.orientation.w = q_target_right.w();
 
-    vf.PublishVirtualForce(*p_current, *target_cylinder);
+    vf.eta_p = sc.drp.eta_p;
+    vf.eta_v = sc.drp.eta_v;
+    target_cylinder->R = sc.drp.radius;
+    vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
 }
 
 void TeleOperation::callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left)

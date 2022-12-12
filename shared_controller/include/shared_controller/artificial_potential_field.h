@@ -85,13 +85,14 @@ class VirtualFixture
 public:
     VirtualFixture();
     vector<float> minDistancePoint(Point &p0, Cylinder &C0);
-    void PublishVirtualForce(Point &p0, Cylinder &C0);
+    void PublishVirtualForce(Point &p0, Cylinder &C0, vector<float> &velocity);
 
 public:
     ros::NodeHandle nh;
     ros::Publisher vfForce_pub;
 
-    float eta = 20;
+    float eta_p = 20;
+    float eta_v = 20;
 };
 
 #endif // _ARTIFICIAL_POTENTIAL_FIELD_H

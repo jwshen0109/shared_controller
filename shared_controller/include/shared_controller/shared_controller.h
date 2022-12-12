@@ -24,6 +24,9 @@ struct dynamic_reconfigure_params
 {
     double ref_force_x = 0.0;
     double scale = 1.0;
+    float eta_p = 0.0;
+    float eta_v = 0.0;
+    float radius = 0.0;
 };
 
 class SharedController
@@ -42,6 +45,9 @@ public:
 
     ros::NodeHandle nh;
 
+public:
+    dynamic_reconfigure_params drp;
+
 private:
     ros::Publisher ft_force_pub;
     ros::Publisher reference_force_pub;
@@ -50,8 +56,6 @@ private:
 
     dynamic_reconfigure::Server<shared_controller::commandConfig> server;
     dynamic_reconfigure::Server<shared_controller::commandConfig>::CallbackType f;
-
-    dynamic_reconfigure_params drp;
 
 private:
     // dynamic config
@@ -91,6 +95,7 @@ public:
     Point *p_current;
     Cylinder *target_cylinder;
     VirtualFixture vf;
+    SharedController sc;
 
 private:
     ros::NodeHandle nh;
