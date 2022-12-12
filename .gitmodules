@@ -10,3 +10,6 @@
 [submodule "aruco_ros"]
 	path = aruco_ros
 	url = https://github.com/jwshen0109/aruco_ros.git
+[submodule "Universal_Robots_ROS_Driver"]
+	path = Universal_Robots_ROS_Driver
+	url = https://github.com/jwshen0109/Universal_Robots_ROS_Driver.git
