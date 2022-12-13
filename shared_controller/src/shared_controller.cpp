@@ -423,6 +423,174 @@ vector<double> TeleOperation::toEulerAngle(Eigen::Quaterniond &q)
     return eulerAngles;
 }
 
+TouchTeleOperation::TouchTeleOperation()
+{
+
+    // 发布机器人坐标
+    target_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/cartesian_motion_controller/target_frame", 1);
+    // 订阅，touch位置以及启动按钮
+    omni_pose_sub = nh.subscribe("/phantom/pose", 1, &TouchTeleOperation::PoseCallback, this);
+    button = nh.subscribe("/phantom/button", 1, &TouchTeleOperation::buttonCallback, this);
+}
+
+void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &last_msgs)
+{
+
+    // xlh:获取touch目前姿态
+    q_omni.x() = last_msgs->pose.orientation.x;
+    q_omni.y() = last_msgs->pose.orientation.y;
+    q_omni.z() = last_msgs->pose.orientation.z;
+    q_omni.w() = last_msgs->pose.orientation.w;
+
+    // xlh:进行转换
+    // q_target = q_transform * q_omni;
+    q_target = q_omni;
+
+    // 创建目标
+    geometry_msgs::PoseStamped target_pose;
+
+    // 设置时间戳
+    target_pose.header.stamp = ros::Time::now();
+    // 设置坐标
+    target_pose.header.frame_id = "base_link";
+
+    // 计算出touch位置相对变换
+    // delta_position[0] = last_msgs->pose.position.x - last_omni.pose.position.x;
+    // delta_position[1] = last_msgs->pose.position.y - last_omni.pose.position.y;
+    // delta_position[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
+    // 左乘旋转矩阵，转换坐标系
+    delta_position[0] = (last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
+                        (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
+    delta_position[1] = -(last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
+                        (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
+    delta_position[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
+
+    //  转换好的touch姿态设为本帧
+    q_cur.x() = q_target.x();
+    q_cur.y() = q_target.y();
+    q_cur.z() = q_target.z();
+    q_cur.w() = q_target.w();
+
+    // 上帧姿态
+    q_last.x() = last_omni.pose.orientation.x;
+    q_last.y() = last_omni.pose.orientation.y;
+    q_last.z() = last_omni.pose.orientation.z;
+    q_last.w() = last_omni.pose.orientation.w;
+
+    // 注意，先前此处乘反了
+    // 计算出touch姿态相对变化
+    delta_q = q_last.conjugate() * q_cur;
+    Eigen::Vector3d euler = delta_q.toRotationMatrix().eulerAngles(2, 1, 0);
+    // 将绕x和z的旋转方向更改
+    euler[2] = -euler[2];
+    euler[0] = -euler[0];
+    Eigen::AngleAxisd rollAngle(euler[0], Eigen::Vector3d::UnitZ());
+    Eigen::AngleAxisd yawAngle(euler[1], Eigen::Vector3d::UnitY());
+    Eigen::AngleAxisd pitchAngle(euler[2], Eigen::Vector3d::UnitX());
+    delta_q = rollAngle * yawAngle * pitchAngle;
+
+    // tf2::Quaternion qtn;
+    // qtn.setRPY(euler[2],euler[1] ,euler[0]);
+    // delta_q.x = qtn.getX();
+    // delta_q.y = qtn.getY();
+    // delta_q.z = qtn.getZ();
+    // delta_q.w = qtn.getW();
+
+    // delta_q = q_transform * delta_q;
+
+    // 初始化
+    if (first_flag == 0 && button_cur == 0)
+    {
+
+        // 机械臂初始位姿
+        target_pose.pose.position.x = 0.4;
+        target_pose.pose.position.y = -0.2;
+        target_pose.pose.position.z = 0.4;
+
+        // 现将坐标转换为前y，右x，上z
+        target_pose.pose.position.x = target_pose.pose.position.x * sqrt(2) / 2 +
+                                      target_pose.pose.position.y * sqrt(2) / 2;
+        target_pose.pose.position.y = -target_pose.pose.position.x * sqrt(2) / 2 +
+                                      target_pose.pose.position.y * sqrt(2) / 2;
+
+        // 先绕y转180
+        q_transform.x() = 0.0;
+        q_transform.y() = 1.0;
+        q_transform.z() = 0.0;
+        q_transform.w() = 0.0;
+
+        // 再绕z转135                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       （先转后的坐标系）
+        q_transform1.x() = 0.0;
+        q_transform1.y() = 0.0;
+        q_transform1.z() = 0.924;
+        q_transform1.w() = 0.383;
+
+        q_transform = q_transform * q_transform1;
+
+        target_pose.pose.orientation.x = q_transform.x();
+        target_pose.pose.orientation.y = q_transform.y();
+        target_pose.pose.orientation.z = q_transform.z();
+        target_pose.pose.orientation.w = q_transform.w();
+
+        target_pose_pub.publish(target_pose);
+        last_pose.pose = target_pose.pose;
+        first_flag = 1;
+
+        // 开始
+    }
+    else if (first_flag == 1 && button_cur == 1)
+    {
+
+        // 获取机械臂当前姿态
+        ur_q_cur.x() = last_pose.pose.orientation.x;
+        ur_q_cur.y() = last_pose.pose.orientation.y;
+        ur_q_cur.z() = last_pose.pose.orientation.z;
+        ur_q_cur.w() = last_pose.pose.orientation.w;
+
+        // 计算出机械臂目标姿态
+        // 感觉此处也乘反了
+        ur_q_target = ur_q_cur * delta_q;
+        // ur_q_target = delta_q * ur_q_cur;
+
+        // 机械臂目标位置
+        target_pose.pose.position.x = last_pose.pose.position.x + delta_position[0];
+        target_pose.pose.position.y = last_pose.pose.position.y + delta_position[1];
+        target_pose.pose.position.z = last_pose.pose.position.z + delta_position[2];
+        // target_pose.pose.orientation.x = last_msgs->pose.orientation.z;
+        // target_pose.pose.orientation.y = last_msgs->pose.orientation.w;
+        // target_pose.pose.orientation.z = -last_msgs->pose.orientation.x;
+        // target_pose.pose.orientation.w = -last_msgs->pose.orientation.y;
+        target_pose.pose.orientation.x = ur_q_target.x();
+        target_pose.pose.orientation.y = ur_q_target.y();
+        target_pose.pose.orientation.z = ur_q_target.z();
+        target_pose.pose.orientation.w = ur_q_target.w();
+
+        target_pose_pub.publish(target_pose);
+        last_pose.pose = target_pose.pose;
+
+        // 保持不动
+    }
+    else
+    {
+
+        last_pose.header.stamp = ros::Time::now();
+        last_pose.header.frame_id = "base_link";
+        target_pose_pub.publish(last_pose);
+    }
+
+    last_omni.pose.position = last_msgs->pose.position;
+    last_omni.pose.orientation.x = q_target.x();
+    last_omni.pose.orientation.y = q_target.y();
+    last_omni.pose.orientation.z = q_target.z();
+    last_omni.pose.orientation.w = q_target.w();
+}
+
+// 是否按下
+void TouchTeleOperation::buttonCallback(const omni_msgs::OmniButtonEventConstPtr &button_state)
+{
+    button_cur = button_state->grey_button;
+}
+
 int main(int argc, char **argv)
 {
 

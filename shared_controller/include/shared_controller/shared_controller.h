@@ -8,6 +8,7 @@
 #include <sensor_msgs/Joy.h>
 #include <dynamic_reconfigure/server.h>
 #include <shared_controller/commandConfig.h>
+#include "omni_msgs/OmniButtonEvent.h"
 
 #include <termio.h>
 #include <iostream>
@@ -161,6 +162,40 @@ private:
     // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig> server;
     // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig>::CallbackType f;
     // int path_config = 0;
+};
+
+class TouchTeleOperation
+{
+public:
+    TouchTeleOperation();
+
+    void PoseCallback(const geometry_msgs::PoseStampedConstPtr &last_pose);
+
+    void buttonCallback(const omni_msgs::OmniButtonEventConstPtr &button_state);
+
+private:
+    ros::NodeHandle nh;
+    ros::Publisher target_pose_pub;
+    ros::Subscriber omni_pose_sub;
+    ros::Subscriber button;
+
+    geometry_msgs::PoseStamped last_pose;
+    geometry_msgs::PoseStamped last_omni;
+
+    vector<double> delta_position = {0, 0, 0};
+    Eigen::Quaterniond delta_q;
+    Eigen::Quaterniond q_cur;
+    Eigen::Quaterniond q_last;
+    Eigen::Quaterniond ur_q_cur;
+    Eigen::Quaterniond ur_q_target;
+
+    Eigen::Quaterniond q_omni;
+    Eigen::Quaterniond q_target;
+    Eigen::Quaterniond q_transform;
+    Eigen::Quaterniond q_transform1;
+
+    int button_cur = 0;
+    int first_flag = 0;
 };
 
 #endif //

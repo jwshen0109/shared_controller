@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   cartesian_motion_controller
   dynamic_reconfigure
   ur_msgs
+  omni_msgs
 )
 
 ## System dependencies are found with CMake's conventions
