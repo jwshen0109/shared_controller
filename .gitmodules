@@ -13,3 +13,6 @@
 [submodule "Universal_Robots_ROS_Driver"]
 	path = Universal_Robots_ROS_Driver
 	url = https://github.com/jwshen0109/Universal_Robots_ROS_Driver.git
+[submodule "Geomagic_Touch_ROS_Drivers"]
+	path = Geomagic_Touch_ROS_Drivers
+	url = https://github.com/jwshen0109/Geomagic_Touch_ROS_Drivers.git
