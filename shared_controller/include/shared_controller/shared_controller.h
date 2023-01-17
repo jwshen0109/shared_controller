@@ -182,7 +182,7 @@ private:
     geometry_msgs::PoseStamped last_pose;
     geometry_msgs::PoseStamped last_omni;
 
-    vector<double> delta_position = {0, 0, 0};
+    vector<double> delta_position_touch = {0, 0, 0};
     Eigen::Quaterniond delta_q;
     Eigen::Quaterniond q_cur;
     Eigen::Quaterniond q_last;

@@ -455,15 +455,15 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
     target_pose.header.frame_id = "base_link";
 
     // 计算出touch位置相对变换
-    // delta_position[0] = last_msgs->pose.position.x - last_omni.pose.position.x;
-    // delta_position[1] = last_msgs->pose.position.y - last_omni.pose.position.y;
-    // delta_position[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
+    delta_position_touch[0] = last_msgs->pose.position.x - last_omni.pose.position.x;
+    delta_position_touch[1] = last_msgs->pose.position.y - last_omni.pose.position.y;
+    delta_position_touch[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
     // 左乘旋转矩阵，转换坐标系
-    delta_position[0] = (last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
-                        (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
-    delta_position[1] = -(last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
-                        (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
-    delta_position[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
+    // delta_position[0] = (last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
+    //                     (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
+    // delta_position[1] = -(last_msgs->pose.position.x - last_omni.pose.position.x) * sqrt(2) / 2 +
+    //                     (last_msgs->pose.position.y - last_omni.pose.position.y) * sqrt(2) / 2;
+    // delta_position[2] = last_msgs->pose.position.z - last_omni.pose.position.z;
 
     //  转换好的touch姿态设为本帧
     q_cur.x() = q_target.x();
@@ -503,15 +503,15 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
     {
 
         // 机械臂初始位姿
-        target_pose.pose.position.x = 0.4;
-        target_pose.pose.position.y = -0.2;
-        target_pose.pose.position.z = 0.4;
+        target_pose.pose.position.x = -0.50;
+        target_pose.pose.position.y = 0.0;
+        target_pose.pose.position.z = 0.25;
 
         // 现将坐标转换为前y，右x，上z
-        target_pose.pose.position.x = target_pose.pose.position.x * sqrt(2) / 2 +
-                                      target_pose.pose.position.y * sqrt(2) / 2;
-        target_pose.pose.position.y = -target_pose.pose.position.x * sqrt(2) / 2 +
-                                      target_pose.pose.position.y * sqrt(2) / 2;
+        // target_pose.pose.position.x = target_pose.pose.position.x * sqrt(2) / 2 +
+        //                               target_pose.pose.position.y * sqrt(2) / 2;
+        // target_pose.pose.position.y = -target_pose.pose.position.x * sqrt(2) / 2 +
+        //                               target_pose.pose.position.y * sqrt(2) / 2;
 
         // 先绕y转180
         q_transform.x() = 0.0;
@@ -525,7 +525,7 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
         q_transform1.z() = 0.924;
         q_transform1.w() = 0.383;
 
-        q_transform = q_transform * q_transform1;
+        // q_transform = q_transform * q_transform1;
 
         target_pose.pose.orientation.x = q_transform.x();
         target_pose.pose.orientation.y = q_transform.y();
@@ -553,9 +553,9 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
         // ur_q_target = delta_q * ur_q_cur;
 
         // 机械臂目标位置
-        target_pose.pose.position.x = last_pose.pose.position.x + delta_position[0];
-        target_pose.pose.position.y = last_pose.pose.position.y + delta_position[1];
-        target_pose.pose.position.z = last_pose.pose.position.z + delta_position[2];
+        target_pose.pose.position.x = last_pose.pose.position.x + delta_position_touch[0];
+        target_pose.pose.position.y = last_pose.pose.position.y + delta_position_touch[1];
+        target_pose.pose.position.z = last_pose.pose.position.z + delta_position_touch[2];
         // target_pose.pose.orientation.x = last_msgs->pose.orientation.z;
         // target_pose.pose.orientation.y = last_msgs->pose.orientation.w;
         // target_pose.pose.orientation.z = -last_msgs->pose.orientation.x;
@@ -597,7 +597,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "shared_controller");
 
     // SharedController sc;
-    TeleOperation tm;
+    // TeleOperation tm;
+    TouchTeleOperation tto;
     // ros::Rate loop_rate(100);
     ros::AsyncSpinner spinner(2);
     spinner.start();

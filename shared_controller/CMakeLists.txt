@@ -147,6 +147,9 @@ include_directories(include
 add_executable(camera_controller src/camera_controller.cpp)
 target_link_libraries(camera_controller ${catkin_LIBRARIES})
 
+add_executable(test1 src/test.cpp)
+target_link_libraries(test1 ${catkin_LIBRARIES})
+
 add_executable(shared_control src/shared_controller.cpp src/artificial_potential_field.cpp)
 target_link_libraries(shared_control ${catkin_LIBRARIES})
 add_dependencies(shared_control ${PROJECT_NAME}_gencfg)
