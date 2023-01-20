@@ -499,12 +499,12 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
     // delta_q = q_transform * delta_q;
 
     // 初始化
-    if (first_flag == 0 && button_cur == 0)
+    if (first_flag == 0 && grey_button == 0)
     {
 
         // 机械臂初始位姿
-        target_pose.pose.position.x = -0.50;
-        target_pose.pose.position.y = 0.0;
+        target_pose.pose.position.x = 0.50;
+        target_pose.pose.position.y = 0.1;
         target_pose.pose.position.z = 0.25;
 
         // 现将坐标转换为前y，右x，上z
@@ -538,7 +538,7 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
 
         // 开始
     }
-    else if (first_flag == 1 && button_cur == 1)
+    else if (first_flag == 1 && grey_button == 1)
     {
 
         // 获取机械臂当前姿态
@@ -568,6 +568,12 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
         target_pose_pub.publish(target_pose);
         last_pose.pose = target_pose.pose;
 
+        if (white_button)
+        {
+            predictor_tmp.updatePolicy();
+            // predictor_tmp.updateDistribution();
+        }
+
         // 保持不动
     }
     else
@@ -588,7 +594,8 @@ void TouchTeleOperation::PoseCallback(const geometry_msgs::PoseStampedConstPtr &
 // 是否按下
 void TouchTeleOperation::buttonCallback(const omni_msgs::OmniButtonEventConstPtr &button_state)
 {
-    button_cur = button_state->grey_button;
+    grey_button = button_state->grey_button;
+    white_button = button_state->white_button;
 }
 
 int main(int argc, char **argv)

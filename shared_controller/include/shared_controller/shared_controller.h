@@ -9,6 +9,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <shared_controller/commandConfig.h>
 #include "omni_msgs/OmniButtonEvent.h"
+#include "shared_controller/task_predictor.h"
 
 #include <termio.h>
 #include <iostream>
@@ -97,6 +98,7 @@ public:
     Cylinder *target_cylinder;
     VirtualFixture vf;
     SharedController sc;
+    Predictor predictor;
 
 private:
     ros::NodeHandle nh;
@@ -173,6 +175,9 @@ public:
 
     void buttonCallback(const omni_msgs::OmniButtonEventConstPtr &button_state);
 
+public:
+    Predictor predictor_tmp;
+
 private:
     ros::NodeHandle nh;
     ros::Publisher target_pose_pub;
@@ -194,7 +199,8 @@ private:
     Eigen::Quaterniond q_transform;
     Eigen::Quaterniond q_transform1;
 
-    int button_cur = 0;
+    int grey_button = 0;
+    int white_button = 0;
     int first_flag = 0;
 };
 
