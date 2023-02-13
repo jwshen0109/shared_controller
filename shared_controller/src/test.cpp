@@ -19,11 +19,11 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "test_for_velocity");
     ros::NodeHandle nh;
-    ros::Subscriber velocity_sub = nh.subscribe("/cartesian_motion_controller/current_velocity", 1, velocityCallback);
-    ros::Publisher pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/cartesian_motion_controller/target_frame", 1);
+    ros::Subscriber velocity_sub = nh.subscribe("/right/cartesian_motion_controller/current_velocity", 1, velocityCallback);
+    ros::Publisher pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/right/cartesian_motion_controller/target_frame", 1);
     ros::Rate loop_rate(100);
 
-    outFile.open("/home/velocity.txt");
+    outFile.open("/home/ur5e/velocity.txt");
     int count = 0;
     int flag = 0;
 
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     target_pose.header.frame_id = "base_link";
     target_pose.pose.position.x = 0.4;
     target_pose.pose.position.y = 0.0;
-    target_pose.pose.position.z = 0.4;
+    target_pose.pose.position.z = 0.5;
     target_pose.pose.orientation.x = 0.0;
     target_pose.pose.orientation.y = 1.0;
     target_pose.pose.orientation.z = 0.0;
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     {
         if (count < 1000 && flag == 0)
         {
-            target_pose.pose.position.z = 0.2;
+            target_pose.pose.position.z = 0.3;
             count++;
             if (count == 1000)
             {
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            target_pose.pose.position.z = 0.4;
+            target_pose.pose.position.z = 0.5;
             count--;
             if (count == 0)
             {

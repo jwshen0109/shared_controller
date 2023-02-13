@@ -1,7 +1,7 @@
 <launch>
     <node pkg="sigma7" type="master" name="sigma7" output="screen">
 
-        <param name="frequency" value="500" />
+        <param name="frequency" value="1000" />
 
         <!--sigma can simulate a button with the gripper. THat is when yoy
         close the gripper it resists a bit at the end and and springs back
