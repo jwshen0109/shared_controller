@@ -604,8 +604,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "shared_controller");
 
     // SharedController sc;
-    // TeleOperation tm;
-    TouchTeleOperation tto;
+    TeleOperation to;
+    // TouchTeleOperation tto;
     // ros::Rate loop_rate(100);
     ros::AsyncSpinner spinner(2);
     spinner.start();
