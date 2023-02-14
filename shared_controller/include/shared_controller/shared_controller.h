@@ -20,6 +20,8 @@
 
 #include "shared_controller/artificial_potential_field.h"
 
+#define PI 3.141592653
+
 using namespace std;
 
 struct dynamic_reconfigure_params
@@ -87,7 +89,12 @@ public:
 
     void current_pose_callback_right(const geometry_msgs::PoseStampedConstPtr &msgs);
 
+    void current_velocity_callback_left(const geometry_msgs::TwistStampedConstPtr &last_velocity);
+
+    void current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity);
+
     // void configCallback(sigma_client::PathGenerationConfig &config, uint32_t level);
+    void getAngle();
 
     Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
 
@@ -116,6 +123,8 @@ private:
     ros::Subscriber sub_sigma_button_right;
     ros::Subscriber sub_current_pose_left;
     ros::Subscriber sub_current_pose_right;
+    ros::Subscriber sub_current_velocity_left;
+    ros::Subscriber sub_current_velocity_right;
 
     geometry_msgs::PoseStamped last_pose_left;
     geometry_msgs::PoseStamped last_sigma_left;
@@ -164,6 +173,9 @@ private:
     // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig> server;
     // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig>::CallbackType f;
     // int path_config = 0;
+
+    vector<float> velocity_left = vector<float>(3, 0.0);
+    vector<float> velocity_right = vector<float>(3, 0.0);
 };
 
 class TouchTeleOperation

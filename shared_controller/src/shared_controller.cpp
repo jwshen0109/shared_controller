@@ -96,6 +96,8 @@ TeleOperation::TeleOperation()
     sub_current_pose_left = nh.subscribe("/left/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_left, this);
     sub_current_pose_right = nh.subscribe("/right/cartesian_motion_controller/current_pose", 1, &TeleOperation::current_pose_callback_right, this);
 
+    sub_current_velocity_left = nh.subscribe("/left/cartesian_motion_controller/current_velocity", 1, &TeleOperation::current_velocity_callback_left, this);
+    sub_current_velocity_right = nh.subscribe("/right/cartesian_motion_controller/current_velocity", 1, &TeleOperation::current_velocity_callback_right, this);
     // dynamic param config
     // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
     // server.setCallback(f);
@@ -380,6 +382,37 @@ void TeleOperation::callback_button_left(const sensor_msgs::JoyConstPtr &last_bu
 void TeleOperation::callback_button_right(const sensor_msgs::JoyConstPtr &last_button_right)
 {
     button_right = last_button_right->buttons[0];
+}
+
+void TeleOperation::current_velocity_callback_left(const geometry_msgs::TwistStampedConstPtr &last_velocity)
+{
+    velocity_left[0] = last_velocity->twist.linear.x * cos(120 * PI / 180);
+    +last_velocity->twist.linear.z *cos(210 * PI / 180);
+    velocity_left[1] = last_velocity->twist.linear.y;
+    velocity_left[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
+}
+
+void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity)
+{
+    velocity_right[0] = last_velocity->twist.linear.x * cos(120 * PI / 180);
+    +last_velocity->twist.linear.z *cos(210 * PI / 180);
+    velocity_right[1] = last_velocity->twist.linear.y;
+    velocity_right[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
+
+    float theta_cos = -velocity_right[0] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+    float theta = acos(theta_cos) * 180 / PI;
+    ROS_INFO("angle: %f", theta);
+    float prob = exp(-theta);
+    ROS_INFO("prob: %f", prob);
+}
+
+void TeleOperation::getAngle()
+{
+    float theta_cos = -velocity_right[0] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+    float theta = acos(theta_cos) * 180 / PI;
+    ROS_INFO("angle: %f", theta);
+    float prob = exp(-theta);
+    ROS_INFO("prob: %f", prob);
 }
 
 Eigen::Quaterniond TeleOperation::scaleRotation(Eigen::Quaterniond &q_current, double scale)
