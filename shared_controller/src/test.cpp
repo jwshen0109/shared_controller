@@ -12,7 +12,14 @@ void velocityCallback(const geometry_msgs::TwistStampedConstPtr &last_msgs)
 {
     outFile << last_msgs->twist.linear.x << "\t";
     outFile << last_msgs->twist.linear.y << "\t";
-    outFile << last_msgs->twist.linear.z << "\n";
+    outFile << last_msgs->twist.linear.z << "\t";
+    float theta_cos = last_msgs->twist.linear.z / (sqrt(pow(last_msgs->twist.linear.x, 2) + pow(last_msgs->twist.linear.y, 2) + pow(last_msgs->twist.linear.z, 2)));
+    float theta = acos(theta_cos) * 180 / 3.1415926;
+    ROS_INFO("angle: %f", theta);
+    float prob = exp(-theta);
+    ROS_INFO("prob: %f", prob);
+    outFile << theta_cos << "\t";
+    outFile << theta << "\n";
 }
 
 int main(int argc, char **argv)
