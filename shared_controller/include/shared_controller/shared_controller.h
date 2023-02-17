@@ -21,6 +21,7 @@
 #include "shared_controller/artificial_potential_field.h"
 
 #define PI 3.141592653
+#define EPSILON 0.0001
 
 using namespace std;
 

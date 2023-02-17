@@ -394,15 +394,22 @@ void TeleOperation::current_velocity_callback_left(const geometry_msgs::TwistSta
 
 void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity)
 {
-    velocity_right[0] = last_velocity->twist.linear.x;
-    velocity_right[1] = last_velocity->twist.linear.y;
-    velocity_right[2] = last_velocity->twist.linear.z;
+    // velocity_right[0] = last_velocity->twist.linear.x;
+    // velocity_right[1] = last_velocity->twist.linear.y;
+    // velocity_right[2] = last_velocity->twist.linear.z;
+    if (abs(last_velocity->twist.linear.x) > EPSILON && abs(last_velocity->twist.linear.y) > EPSILON && abs(last_velocity->twist.linear.z) > EPSILON)
+    {
+        velocity_right[0] = last_velocity->twist.linear.x * cos(120 * PI / 180);
+        +last_velocity->twist.linear.z *cos(210 * PI / 180);
+        velocity_right[1] = last_velocity->twist.linear.y;
+        velocity_right[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
 
-    float theta_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
-    float theta = acos(theta_cos) * 180 / PI;
-    ROS_INFO("angle: %f", theta);
-    float prob = exp(-theta);
-    ROS_INFO("prob: %f", prob);
+        float theta_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        float theta = acos(theta_cos) * 180 / PI;
+        ROS_INFO("angle: %f", theta);
+        float prob = exp(-theta);
+        ROS_INFO("prob: %f", prob);
+    }
 }
 
 void TeleOperation::getAngle()
