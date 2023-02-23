@@ -82,6 +82,7 @@ TeleOperation::TeleOperation()
     // topic to cartesian controllers
     target_pub_left = nh.advertise<geometry_msgs::PoseStamped>("/left/cartesian_motion_controller/target_frame", 1);
     target_pub_right = nh.advertise<geometry_msgs::PoseStamped>("/right/cartesian_motion_controller/target_frame", 1);
+    netforce_pub = nh.advertise<std_msgs::Float64MultiArray>("/touch_netforce", 1);
     // path_pub_left = nh.advertise<nav_msgs::Path>("/left/path", 1);
     // path_pub_right = nh.advertise<nav_msgs::Path>("/right/path", 1);
     // subscribe from sigma7 devices
@@ -101,6 +102,7 @@ TeleOperation::TeleOperation()
     // dynamic param config
     // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
     // server.setCallback(f);
+    single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
 
     // APF init
     target_cylinder = new Cylinder(0.6, 0.0, 0.15);
@@ -123,6 +125,29 @@ void TeleOperation::current_pose_callback_right(const geometry_msgs::PoseStamped
     {
         first_flag_right = 2;
     }
+}
+
+void TeleOperation::singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        retractor_spForce[i] = last_msg->data[i];
+    }
+    netForceCalculation(retractor_spForce);
+    std_msgs::Float64MultiArray netforce_msgs;
+    netforce_msgs.data.push_back(retractor_nForce[0]);
+    netforce_msgs.data.push_back(retractor_nForce[1]);
+    netforce_pub.publish(netforce_msgs);
+}
+
+vector<float> TeleOperation::netForceCalculation(vector<float> &singlePointForce)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        retractor_nForce[0] += retractor_spForce[i];
+        retractor_nForce[1] += retractor_spForce[i + 4];
+    }
+    return retractor_nForce;
 }
 
 // void TeleManipulation::configCallback(sigma_client::PathGenerationConfig &config, uint32_t level)
@@ -404,12 +429,28 @@ void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistSt
         velocity_right[1] = last_velocity->twist.linear.y;
         velocity_right[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
 
-        float theta_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
-        float theta = acos(theta_cos) * 180 / PI;
-        ROS_INFO("angle: %f", theta);
-        float prob = exp(-theta);
-        ROS_INFO("prob: %f", prob);
+        float rx_cos = velocity_right[0] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        float ry_cos = velocity_right[1] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        float rz_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        angle_right[0] = acos(rx_cos) * 180 / PI;
+        angle_right[1] = acos(ry_cos) * 180 / PI;
+        angle_right[2] = acos(rz_cos) * 180 / PI;
+        updateProbability();
     }
+}
+
+void TeleOperation::updateProbability()
+{
+    float angle_right_xy = max(angle_right[0], angle_right[1]);
+    probability[0][0] = T(0, 0) * exp(-retractor_nForce[1]) * exp(-angle_right_xy * lambda);
+    probability[0][1] = T(0, 1) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[0][2] = T(0, 2) * exp(-retractor_nForce[1]) * exp(-angle_right_xy * lambda);
+    probability[1][0] = T(1, 0) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[1][1] = T(1, 1) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[1][2] = T(1, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[2][0] = T(2, 0) * exp(-retractor_nForce[1]) * exp(-angle_right_xy * lambda);
+    probability[2][1] = T(2, 1) * exp(-retractor_nForce[1]) * exp(-angle_right_xy * lambda);
+    probability[2][2] = T(2, 2) * exp(-retractor_nForce[1]) * exp(-angle_right_xy * lambda);
 }
 
 void TeleOperation::getAngle()

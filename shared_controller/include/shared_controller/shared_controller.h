@@ -6,6 +6,7 @@
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Joy.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <dynamic_reconfigure/server.h>
 #include <shared_controller/commandConfig.h>
 #include "omni_msgs/OmniButtonEvent.h"
@@ -95,6 +96,10 @@ public:
     void current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity);
 
     // void configCallback(sigma_client::PathGenerationConfig &config, uint32_t level);
+    void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg);
+
+    void updateProbability();
+
     void getAngle();
 
     Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
@@ -107,6 +112,14 @@ public:
     VirtualFixture vf;
     SharedController sc;
     Predictor predictor;
+    vector<vector<float>> probability = vector<vector<float>>(3, vector<float>(3, 0.0));
+
+private:
+    vector<float> netForceCalculation(vector<float> &singlePointForce);
+
+private:
+    vector<float> retractor_spForce = vector<float>(8, 0.0f);
+    vector<float> retractor_nForce = vector<float>(2, 0.0f);
 
 private:
     ros::NodeHandle nh;
@@ -114,6 +127,7 @@ private:
     ros::Publisher target_pub_right;
     ros::Publisher path_pub_left;
     ros::Publisher path_pub_right;
+    ros::Publisher netforce_pub;
 
     ros::ServiceClient head_client;
 
@@ -126,6 +140,7 @@ private:
     ros::Subscriber sub_current_pose_right;
     ros::Subscriber sub_current_velocity_left;
     ros::Subscriber sub_current_velocity_right;
+    ros::Subscriber single_point_force_sub;
 
     geometry_msgs::PoseStamped last_pose_left;
     geometry_msgs::PoseStamped last_sigma_left;
@@ -135,7 +150,7 @@ private:
     geometry_msgs::PoseStamped current_pose_right;
 
     // 0,1,2 for left ur; 3,4,5 for right ur
-    vector<double> delta_position = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    vector<double> delta_position = vector<double>(6, 0.0);
 
     // left ur quaternions
     Eigen::Quaterniond delta_q_left;
@@ -175,8 +190,14 @@ private:
     // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig>::CallbackType f;
     // int path_config = 0;
 
+    // for velocity angle
+    float lambda = 1.0f;
     vector<float> velocity_left = vector<float>(3, 0.0);
     vector<float> velocity_right = vector<float>(3, 0.0);
+    vector<float> angle_left = vector<float>(3, 0.0);
+    vector<float> angle_right = vector<float>(3, 0.0);
+
+    Eigen::Matrix3d T = Eigen::Matrix3d::Identity();
 };
 
 class TouchTeleOperation
