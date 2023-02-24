@@ -45,6 +45,7 @@ void SharedController::twistCallback(const geometry_msgs::TwistStampedConstPtr &
     reference_force.wrench.torque.y = 0.0;
     reference_force.wrench.torque.z = 0.0;
     reference_force_pub.publish(reference_force);
+    publishFtSensorForce();
 }
 
 void SharedController::buttonCallback(const sensor_msgs::JoyConstPtr &last_state)

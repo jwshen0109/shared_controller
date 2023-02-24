@@ -154,9 +154,9 @@ add_executable(quaTrans src/quaternions.cpp)
 target_link_libraries(quaTrans ${catkin_LIBRARIES})
 add_dependencies(quaTrans ${PROJECT_NAME}_gencfg)
 
-# add_executable(head src/head_control.cpp)
-# target_link_libraries(head ${catkin_LIBRARIES})
-# add_dependencies(head ${PROJECT_NAME}_gencfg)
+add_executable(head src/head_control.cpp)
+target_link_libraries(head ${catkin_LIBRARIES})
+add_dependencies(head ${PROJECT_NAME}_gencfg)
 
 add_executable(sigma_client src/sigma_client.cpp)
 add_dependencies(sigma_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

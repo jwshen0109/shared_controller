@@ -20,9 +20,9 @@ quaTransform::quaTransform()
 
   // subscribe from sigma7 devices
   // pose
-  sub_sigma_right = nh.subscribe("/sigma7/sigma1/pose", 1, &quaTransform::callback_right, this);
+  sub_sigma_right = nh.subscribe("/sigma7/sigma0/pose", 1, &quaTransform::callback_right, this);
   // buttons
-  sub_sigma_button_right = nh.subscribe("/sigma7/sigma1/buttons", 1, &quaTransform::callback_button_right, this);
+  sub_sigma_button_right = nh.subscribe("/sigma7/sigma0/buttons", 1, &quaTransform::callback_button_right, this);
 
   head_client = nh.serviceClient<sword::Stick>("backend_infer");
 
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 {
   // Initiate ROS
   ros::init(argc, argv, "head");
-
+  ROS_INFO("head: starting ...");
   // Create an object of class SubscribeAndPublish that will take care of everything
   quaTransform transform;
 
