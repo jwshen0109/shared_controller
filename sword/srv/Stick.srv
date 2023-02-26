@@ -1,7 +1,0 @@
-float64[3] cur_p
-float64[4] cur_r
-float64[3] tar_p
-float64[4] tar_r
---- 
-float64[3] v
-float64[4] w

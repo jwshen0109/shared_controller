@@ -1,4 +1,0 @@
-float32[3] cur_p
-float32[3] tar_p
---- 
-float32[3] v
