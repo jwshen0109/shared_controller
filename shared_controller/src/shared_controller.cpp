@@ -105,9 +105,20 @@ TeleOperation::TeleOperation()
     // server.setCallback(f);
     single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
 
+    outFile.open("/home/ur5e/prob.txt");
+
     // APF init
     target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     p_current = new Point(0, 0, 0);
+    T(0, 0) = 0.5;
+    T(0, 1) = 0.5;
+    T(0, 2) = 0.0;
+    T(1, 0) = 1 / 6;
+    T(1, 1) = 1 / 2;
+    T(1, 2) = 1 / 3;
+    T(2, 0) = 0.0;
+    T(2, 1) = 1 / 3;
+    T(2, 2) = 2 / 3;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -443,15 +454,30 @@ void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistSt
 void TeleOperation::updateProbability()
 {
     float angle_right_xy = max(angle_right[0], angle_right[1]);
-    probability[0][0] = T(0, 0) * exp(-(90 - angle_right[2]) * lambda);
-    probability[0][1] = T(0, 1) * exp(-angle_right[2] * lambda);
+    probability[0][0] = T(0, 0) * exp(-(90 - angle_right[2]) * lambda) * exp(-velocity_right[2] * beta);
+    probability[0][1] = T(0, 1) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
     probability[0][2] = 0.0;
     probability[1][0] = T(1, 0) * exp(-(90 - angle_right[2]) * lambda);
-    probability[1][1] = T(1, 1) * exp(-angle_right[2] * lambda);
-    probability[1][2] = T(1, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[1][1] = T(1, 1) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
+    probability[1][2] = T(1, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
     probability[2][0] = 0.0;
     probability[2][1] = T(2, 1) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
     probability[2][2] = T(2, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (j == 3)
+            {
+                outFile << probability[i][j] << std::endl;
+            }
+            else
+            {
+                outFile << probability[i][j] << "\t";
+            }
+        }
+    }
 }
 
 void TeleOperation::getAngle()

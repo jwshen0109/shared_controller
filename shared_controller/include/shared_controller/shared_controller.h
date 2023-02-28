@@ -18,6 +18,7 @@
 #include <eigen3/Eigen/Dense>
 #include <vector>
 #include <cmath>
+#include <fstream>
 
 #include "shared_controller/artificial_potential_field.h"
 
@@ -192,12 +193,15 @@ private:
 
     // for velocity angle
     float lambda = 1.0f;
+    float beta = 1.0f;
     vector<float> velocity_left = vector<float>(3, 0.0);
     vector<float> velocity_right = vector<float>(3, 0.0);
     vector<float> angle_left = vector<float>(3, 0.0);
     vector<float> angle_right = vector<float>(3, 0.0);
 
     Eigen::Matrix3d T = Eigen::Matrix3d::Identity();
+
+    std::ofstream outFile;
 };
 
 class TouchTeleOperation
