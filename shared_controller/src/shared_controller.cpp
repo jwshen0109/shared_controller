@@ -686,6 +686,7 @@ int main(int argc, char **argv)
 
     // SharedController sc;
     TeleOperation to;
+
     // TouchTeleOperation tto;
     // ros::Rate loop_rate(100);
     ros::AsyncSpinner spinner(2);
