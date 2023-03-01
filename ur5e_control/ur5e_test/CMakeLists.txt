@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   cartesian_motion_controller
   dynamic_reconfigure
   ur_msgs
+  sensor_msgs
   # omni_msgs
 )
 
@@ -155,6 +156,9 @@ add_executable(force_rotation src/force_rotation.cpp)
 target_link_libraries(force_rotation ${catkin_LIBRARIES})
 add_dependencies(force_rotation ${PROJECT_NAME}_gencfg)
 
+
+add_executable(test_threshold src/test_t.cpp)
+target_link_libraries(test_threshold ${catkin_LIBRARIES})
 
 # add_executable(force_feedback src/force_feedback.cpp)
 # target_link_libraries(force_feedback ${catkin_LIBRARIES})
