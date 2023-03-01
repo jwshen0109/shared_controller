@@ -105,7 +105,7 @@ TeleOperation::TeleOperation()
     // server.setCallback(f);
     single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
 
-    outFile.open("/home/ur5e/prob.txt");
+    outFile.open("/home/ur5e/Code/shared_control/data/prob.txt");
 
     // APF init
     target_cylinder = new Cylinder(0.6, 0.0, 0.15);
@@ -145,7 +145,8 @@ void TeleOperation::singlePointForceCallback(const std_msgs::Float64MultiArrayCo
     {
         retractor_spForce[i] = last_msg->data[i];
     }
-    netForceCalculation(retractor_spForce);
+    retractor_nForce[0] = retractor_nForce[1] = 0.0;
+    retractor_nForce = netForceCalculation(retractor_spForce);
     std_msgs::Float64MultiArray netforce_msgs;
     netforce_msgs.data.push_back(retractor_nForce[0]);
     netforce_msgs.data.push_back(retractor_nForce[1]);
@@ -331,7 +332,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     if (first_flag_right == 0 && button_right == 0)
     {
 
-        target_pose_right.pose.position.x = 0.4;
+        target_pose_right.pose.position.x = 0.45;
         target_pose_right.pose.position.y = 0.0;
         target_pose_right.pose.position.z = 0.4;
         target_pose_right.pose.orientation.x = 0.0;
@@ -447,6 +448,10 @@ void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistSt
         angle_right[0] = acos(rx_cos) * 180 / PI;
         angle_right[1] = acos(ry_cos) * 180 / PI;
         angle_right[2] = acos(rz_cos) * 180 / PI;
+        if (angle_right[2] > 90)
+        {
+            angle_right[2] = 90;
+        }
         updateProbability();
     }
 }
@@ -459,16 +464,16 @@ void TeleOperation::updateProbability()
     probability[0][2] = 0.0;
     probability[1][0] = T(1, 0) * exp(-(90 - angle_right[2]) * lambda);
     probability[1][1] = T(1, 1) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
-    probability[1][2] = T(1, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
+    probability[1][2] = T(1, 2) * exp(-abs(1.0 - retractor_nForce[1])) * exp(-angle_right[2] * lambda) * exp(-velocity_right[2] * beta);
     probability[2][0] = 0.0;
-    probability[2][1] = T(2, 1) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
-    probability[2][2] = T(2, 2) * exp(-retractor_nForce[1]) * exp(-angle_right[2] * lambda);
+    probability[2][1] = T(2, 1) * exp(-abs(1.0 - retractor_nForce[1])) * exp(-angle_right[2] * lambda);
+    probability[2][2] = T(2, 2) * exp(-abs(1.0 - retractor_nForce[1])) * exp(-angle_right[2] * lambda);
 
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            if (j == 3)
+            if (j == 2)
             {
                 outFile << probability[i][j] << std::endl;
             }

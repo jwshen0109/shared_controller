@@ -1,0 +1,2 @@
+sudo chmod 777 /dev/bus/usb/001/018
+sudo chmod 777 /dev/ttyUSB0

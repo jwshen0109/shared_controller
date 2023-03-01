@@ -192,8 +192,8 @@ private:
     // int path_config = 0;
 
     // for velocity angle
-    float lambda = 1.0f;
-    float beta = 1.0f;
+    float lambda = 0.0174f;
+    float beta = 1.5f;
     vector<float> velocity_left = vector<float>(3, 0.0);
     vector<float> velocity_right = vector<float>(3, 0.0);
     vector<float> angle_left = vector<float>(3, 0.0);
