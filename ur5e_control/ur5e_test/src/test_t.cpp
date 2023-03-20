@@ -25,6 +25,9 @@ ofstream output_joint;
 vector<float> net_force(2, 0.0);
 vector<float> singlePointForce(8, 0.0);
 
+int flag_left = 0;
+int flag_right = 0;
+
 void calculateTorque(vector<double> &torque)
 {
 
@@ -47,7 +50,7 @@ void calculateTorque(vector<double> &torque)
 
 void ftSensorForcePub()
 {
-
+    double threshold = 1.0;
     geometry_msgs::WrenchStamped left_sensor_force;
     geometry_msgs::WrenchStamped right_sensor_force;
     left_sensor_force.header.stamp = ros::Time::now();
@@ -74,24 +77,24 @@ void ftSensorForcePub()
     output_torque << torque[0] << "\t";
     output_torque << torque[1] << endl;
 
-    if (abs(torque[0]) >= 0.5)
-    {
-        right_sensor_force.wrench.torque.z = torque[0];
-    }
-    if (abs(torque[1]) >= 0.5)
-    {
-        right_sensor_force.wrench.torque.y = -torque[1] / 2;
-        // ROS_INFO("torque1:%f", torque[1]);
-    }
-    if (abs(torque[2]) >= 0.5)
-    {
-        left_sensor_force.wrench.torque.z = torque[2];
-    }
-    if (abs(torque[3]) >= 0.5)
-    {
-        left_sensor_force.wrench.torque.y = -torque[3] / 2;
-        // ROS_INFO("torque1:%f", torque[1]);
-    }
+    // if (abs(torque[0]) >= threshold)
+    // {
+    //     right_sensor_force.wrench.torque.z = torque[0];
+    // }
+    // if (abs(torque[1]) >= threshold)
+    // {
+    //     right_sensor_force.wrench.torque.y = -torque[1] / 2;
+    //     // ROS_INFO("torque1:%f", torque[1]);
+    // }
+    // if (abs(torque[2]) >= threshold)
+    // {
+    //     left_sensor_force.wrench.torque.z = torque[2];
+    // }
+    // if (abs(torque[3]) >= threshold)
+    // {
+    //     left_sensor_force.wrench.torque.y = -torque[3] / 2;
+    //     // ROS_INFO("torque1:%f", torque[1]);
+    // }
 
     left_force_pub.publish(left_sensor_force);
     right_force_pub.publish(right_sensor_force);
@@ -123,6 +126,22 @@ void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_ms
     }
     net_force[0] = net_force[1] = 0;
     net_force = netForceCalculation(singlePointForce);
+    if (net_force[0] >= 0.02)
+    {
+        flag_left = 1;
+    }
+    else
+    {
+        flag_left = 0;
+    }
+    if (net_force[1] >= 0.02)
+    {
+        flag_right = 1;
+    }
+    else
+    {
+        flag_right = 0;
+    }
     std_msgs::Float64MultiArray netforce_msgs;
     netforce_msgs.data.push_back(net_force[0]);
     netforce_msgs.data.push_back(net_force[1]);
@@ -132,23 +151,29 @@ void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_ms
 
 void currentPoseCallback(const geometry_msgs::PoseStampedConstPtr &last_msgs)
 {
-    output_pose << last_msgs->pose.position.x << "\t";
-    output_pose << last_msgs->pose.position.y << "\t";
-    output_pose << last_msgs->pose.position.z << "\t";
-    output_pose << last_msgs->pose.orientation.x << "\t";
-    output_pose << last_msgs->pose.orientation.y << "\t";
-    output_pose << last_msgs->pose.orientation.z << "\t";
-    output_pose << last_msgs->pose.orientation.w << endl;
+    if (flag_right == 1)
+    {
+        output_pose << last_msgs->pose.position.x << "\t";
+        output_pose << last_msgs->pose.position.y << "\t";
+        output_pose << last_msgs->pose.position.z << "\t";
+        output_pose << last_msgs->pose.orientation.x << "\t";
+        output_pose << last_msgs->pose.orientation.y << "\t";
+        output_pose << last_msgs->pose.orientation.z << "\t";
+        output_pose << last_msgs->pose.orientation.w << endl;
+    }
 }
 
 void currentVelocityCallback(const geometry_msgs::TwistStampedConstPtr &last_velocity)
 {
-    output_vel << last_velocity->twist.linear.x << "\t";
-    output_vel << last_velocity->twist.linear.y << "\t";
-    output_vel << last_velocity->twist.linear.z << "\t";
-    output_vel << last_velocity->twist.angular.x << "\t";
-    output_vel << last_velocity->twist.angular.y << "\t";
-    output_vel << last_velocity->twist.angular.z << endl;
+    if (flag_right == 1)
+    {
+        output_vel << last_velocity->twist.linear.x << "\t";
+        output_vel << last_velocity->twist.linear.y << "\t";
+        output_vel << last_velocity->twist.linear.z << "\t";
+        output_vel << last_velocity->twist.angular.x << "\t";
+        output_vel << last_velocity->twist.angular.y << "\t";
+        output_vel << last_velocity->twist.angular.z << endl;
+    }
 }
 
 void jointCallback(const sensor_msgs::JointStateConstPtr &last_joint)
@@ -177,7 +202,7 @@ int main(int argc, char **argv)
     // subscribe UR retractor position velocity and joint states
     ros::Subscriber pose_sub = nh.subscribe("/right/cartesian_force_controller/current_pose", 1, &currentPoseCallback);
     ros::Subscriber velocity_sub = nh.subscribe("/right/cartesian_force_controller/current_velocity", 1, &currentVelocityCallback);
-    ros::Subscriber joint_state_sub = nh.subscribe("/right/joint_state", 1, &jointCallback);
+    ros::Subscriber joint_state_sub = nh.subscribe("/right/joint_states", 1, &jointCallback);
 
     // publish reference force to special topic
     ros::Publisher ref_force_pub_left = nh.advertise<geometry_msgs::WrenchStamped>("/left/cartesian_force_controller/target_wrench", 1);

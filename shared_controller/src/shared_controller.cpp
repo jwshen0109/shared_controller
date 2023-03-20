@@ -312,7 +312,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     geometry_msgs::PoseStamped target_pose_right;
 
     target_pose_right.header.stamp = ros::Time::now();
-    target_pose_right.header.frame_id = "base_link";
+    target_pose_right.header.frame_id = "right_base_link";
 
     delta_position[3] = last_msgs_right->pose.position.x - last_sigma_right.pose.position.x;
     delta_position[4] = last_msgs_right->pose.position.y - last_sigma_right.pose.position.y;
@@ -392,7 +392,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     {
 
         last_pose_right.header.stamp = ros::Time::now();
-        last_pose_right.header.frame_id = "base_link";
+        last_pose_right.header.frame_id = "right_base_link";
         target_pub_right.publish(last_pose_right);
 
         p_current->x = last_pose_right.pose.position.x;
@@ -409,7 +409,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     vf.eta_p = sc.drp.eta_p;
     vf.eta_v = sc.drp.eta_v;
     target_cylinder->R = sc.drp.radius;
-    vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
+    // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
 }
 
 void TeleOperation::callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left)

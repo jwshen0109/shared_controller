@@ -156,6 +156,8 @@ target_link_libraries(multiSigmaDevices ${catkin_LIBRARIES} drd
                                                 dhd 
                                                 usb-1.0 -lrt 
                                                 pthread) 
+add_executable(op_traj src/output_traj.cpp)
+target_link_libraries(op_traj ${catkin_LIBRARIES})
 
 #add_executable(sigmaDevice_node src/sigmaDevice.cpp)
 #add_dependencies(sigmaDevice_node sigma)
