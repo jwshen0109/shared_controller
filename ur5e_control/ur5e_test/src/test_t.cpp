@@ -126,7 +126,7 @@ void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_ms
     }
     net_force[0] = net_force[1] = 0;
     net_force = netForceCalculation(singlePointForce);
-    if (net_force[0] >= 0.02)
+    if (net_force[0] >= 0.95)
     {
         flag_left = 1;
     }
@@ -134,7 +134,7 @@ void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_ms
     {
         flag_left = 0;
     }
-    if (net_force[1] >= 0.02)
+    if (net_force[1] >= 0.95)
     {
         flag_right = 1;
     }
@@ -178,15 +178,18 @@ void currentVelocityCallback(const geometry_msgs::TwistStampedConstPtr &last_vel
 
 void jointCallback(const sensor_msgs::JointStateConstPtr &last_joint)
 {
-    for (int i = 0; i < 6; i++)
+    if (flag_right == 1)
     {
-        output_joint << last_joint->position[i] << "\t";
+        for (int i = 0; i < 6; i++)
+        {
+            output_joint << last_joint->position[i] << "\t";
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            output_joint << last_joint->velocity[i] << "\t";
+        }
+        output_joint << last_joint->velocity[5] << endl;
     }
-    for (int i = 0; i < 5; i++)
-    {
-        output_joint << last_joint->velocity[i] << "\t";
-    }
-    output_joint << last_joint->velocity[5] << endl;
 }
 
 int main(int argc, char **argv)

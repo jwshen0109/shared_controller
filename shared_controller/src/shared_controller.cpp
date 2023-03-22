@@ -212,7 +212,7 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
     if (first_flag_left == 2 && button_left == 0)
     {
         // if(first_flag_left == 0 && button_left == 0){
-        target_pose_left.pose.position.x = 0.4;
+        target_pose_left.pose.position.x = 0.45;
         target_pose_left.pose.position.y = 0.0;
         target_pose_left.pose.position.z = 0.4;
         target_pose_left.pose.orientation.x = 0.0;
