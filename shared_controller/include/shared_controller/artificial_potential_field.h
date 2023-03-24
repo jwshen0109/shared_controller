@@ -15,10 +15,10 @@
 
 using namespace std;
 
-class Point
+class Point3D
 {
 public:
-    Point(float _x, float _y, float _z) : x(_x), y(_y), z(_z)
+    Point3D(float _x, float _y, float _z) : x(_x), y(_y), z(_z)
     {
     }
 
@@ -26,6 +26,18 @@ public:
     float x;
     float y;
     float z;
+};
+
+class Point2D
+{
+public:
+    Point2D(float _x, float _y) : x(_x), y(_y)
+    {
+    }
+
+public:
+    float x;
+    float y;
 };
 
 class Cylinder
@@ -67,17 +79,26 @@ public:
 
     forceVector forceAttraction(Point &p_target, Point &p_current);
 
-    forceVector forceRepulsion();
+    forceVector xFedge(Point2D &retractor_cur, float v_x);
+    forceVector yFedge(Point2D &retractor_cur, float v_y);
 
-    float porcess(float cur_velocity, Point &p_target, Point &p_current);
+    float Process(Point2D &retractor_cur, vector<float> vel_cur);
 
 public:
     // to do
 
 private:
     float dis_att;
-    float eta = 0.3;
+    float eta_attr = 0.3;
+    float eta_repulsion = 0.02;
     float delta_t = 0.005;
+
+    // retractor size
+    float retractor_width = 0.015;
+    float retractor_height = 0.035;
+    // edge size
+    float edge_width = 0.03;
+    float edge_height = 0.05;
 };
 
 class VirtualFixture

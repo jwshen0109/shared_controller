@@ -103,6 +103,8 @@ public:
 
     void getAngle();
 
+    vector<float> calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor);
+
     Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
 
     std::vector<double> toEulerAngle(Eigen::Quaterniond &q);
@@ -121,6 +123,9 @@ private:
 private:
     vector<float> retractor_spForce = vector<float>(8, 0.0f);
     vector<float> retractor_nForce = vector<float>(2, 0.0f);
+    vector<float> leftRetractor_Coordians = vector<float>(3, 0.0f);
+    vector<float> rightRetractor_Coordians = vector<float>(3, 0.0f);
+    float relativeCoordians = 0.0f;
 
 private:
     ros::NodeHandle nh;

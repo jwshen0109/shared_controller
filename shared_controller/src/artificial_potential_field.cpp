@@ -1,8 +1,10 @@
 #include "shared_controller/artificial_potential_field.h"
 
+constexpr auto e = 2.71828;
+
 forceVector forceVector::addVector(forceVector v1, forceVector v2)
 {
-    Point p_tmp(v2.p_end.x + v1.p_end.x - v1.p_start.x, v2.p_end.y + v1.p_end.y - v1.p_start.y, v2.p_end.z + v1.p_end.z - v1.p_start.z);
+    Point2D p_tmp(v2.p_end.x + v1.p_end.x - v1.p_start.x, v2.p_end.y + v1.p_end.y - v1.p_start.y);
     forceVector vt(v1.p_start, p_tmp);
     return vt;
 }
@@ -26,14 +28,76 @@ forceVector APF::forceAttraction(Point &p_target, Point &p_current)
     return vFatt;
 }
 
-forceVector APF::forceRepulsion()
+//
+forceVector APF::xFedge(Point2D &retractor_cur, float v_x)
 {
+    double Fedge = 0.0;
+    Point2D pFedge(0.0, 0.0);
+    if (-(edge_width - retractor_width / 2) <= retractor_cur.x && retractor_cur.x < 0.0)
+    {
+        Fedge = eta_repulsion * pow(retractor_cur.x, 2) / 3;
+        pFedge = Point2D(retractor_cur.x + Fedge, retractor_cur.y);
+    }
+    else if (retractor_cur.x >= 0.0 && retractor_cur.x <= (edge_width - retractor_width / 2))
+    {
+        Fedge = eta_repulsion * pow(retractor_cur.x, 2) / 3;
+        pFedge = Point2D(retractor_cur.x - Fedge, retractor_cur.y);
+    }
+    else if (-edge_width < retractor_cur.x && retractor_cur.x < -(edge_width - retractor_width / 2))
+    {
+        Fedge = eta_repulsion * v_x * pow(e, -retractor_cur.x);
+        pFedge = Point2D(retractor_cur.x + Fedge, retractor_cur.y);
+    }
+    else if ((edge_width - retractor_width / 2) < retractor_cur.x && retractor_cur.x < edge_width)
+    {
+        Fedge = eta_repulsion * v_x * pow(e, retractor_cur.x);
+        pFedge = Point2D(retractor_cur.x - Fedge, retractor_cur.y);
+    }
+
+    forceVector vFedge(retractor_cur, pFedge);
+    vFedge.printVector("vFedge");
+    // vFedge.drawVector();
+
+    return vFedge;
 }
 
-float APF::porcess(float cur_velocity, Point &p_target, Point &p_current)
+forceVector APF::yFedge(Point2D &retractor_cur, float v_y)
 {
-    forceVector vFtotal = forceAttraction(p_target, p_current); // attractive force
-    float dis = cur_velocity * delta_t + vFtotal.length * pow(delta_t, 2) / 2;
+    double Fedge = 0.0;
+    Point2D pFedge(0.0, 0.0);
+    if (-(edge_height - retractor_height / 2) <= retractor_cur.y && retractor_cur.y < 0.0)
+    {
+        Fedge = eta_repulsion * pow(retractor_cur.y, 2) / 3;
+        pFedge = Point2D(retractor_cur.y + Fedge, retractor_cur.x);
+    }
+    else if (retractor_cur.y >= 0.0 && retractor_cur.y <= (edge_height - retractor_height / 2))
+    {
+        Fedge = eta_repulsion * pow(retractor_cur.y, 2) / 3;
+        pFedge = Point2D(retractor_cur.y - Fedge, retractor_cur.x);
+    }
+    else if (-edge_height < retractor_cur.y && retractor_cur.y < -(edge_height - retractor_height / 2))
+    {
+        Fedge = eta_repulsion * v_y * pow(e, -retractor_cur.y);
+        pFedge = Point2D(retractor_cur.y + Fedge, retractor_cur.x);
+    }
+    else if ((edge_height - retractor_height / 2) < retractor_cur.y && retractor_cur.y < edge_height)
+    {
+        Fedge = eta_repulsion * v_y * pow(e, retractor_cur.y);
+        pFedge = Point2D(retractor_cur.y - Fedge, retractor_cur.x);
+    }
+
+    forceVector vFedge(retractor_cur, pFedge);
+    vFedge.printVector("vFedge");
+    // vFedge.drawVector();
+
+    return vFedge;
+}
+
+float APF::Process(Point2D &retractor_cur, vector<float> vel_cur)
+{
+    forceVector vxFtotal = xFedge(retractor_cur, vel_cur[0]);
+    forceVector vyFtotal = yFedge(retractor_cur, vel_cur[1]);
+    float dis = vel_cur * delta_t + vFtotal.length * pow(delta_t, 2) / 2;
 
     return dis;
 }

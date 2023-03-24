@@ -219,13 +219,7 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
         target_pose_left.pose.orientation.y = 1.0;
         target_pose_left.pose.orientation.z = 0.0;
         target_pose_left.pose.orientation.w = 0.0;
-        // target_pose_left.pose.position.x = current_pose_left.pose.position.x;
-        // target_pose_left.pose.position.y = current_pose_left.pose.position.y;
-        // target_pose_left.pose.position.z = current_pose_left.pose.position.z;
-        // target_pose_left.pose.orientation.x = current_pose_left.pose.orientation.x;
-        // target_pose_left.pose.orientation.y = current_pose_left.pose.orientation.y;
-        // target_pose_left.pose.orientation.z = current_pose_left.pose.orientation.z;
-        // target_pose_left.pose.orientation.w = current_pose_left.pose.orientation.w;
+
         target_pub_left.publish(target_pose_left);
         last_pose_left.pose = target_pose_left.pose;
         first_flag_left = 1;
@@ -240,39 +234,30 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
 
         ur_q_target_left = delta_q_left * ur_q_cur_left;
 
-        target_pose_left.pose.position.x = last_pose_left.pose.position.x + delta_position[1];
-        target_pose_left.pose.position.y = last_pose_left.pose.position.y - delta_position[0];
-        target_pose_left.pose.position.z = last_pose_left.pose.position.z + delta_position[2];
+        // collision detection
+        leftRetractor_Coordians[0] = last_pose_left.pose.position.x + delta_position[1];
+        leftRetractor_Coordians[1] = last_pose_left.pose.position.y - delta_position[0];
+        leftRetractor_Coordians[2] = last_pose_left.pose.position.z + delta_position[2];
+        vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
+        relativeCoordians = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
 
-        // target_pose_left.pose.orientation.x = q_target.x();
-        // target_pose_left.pose.orientation.y = q_target.y();
-        // target_pose_left.pose.orientation.z = q_target.z();
-        // target_pose_left.pose.orientation.w = q_target.w();
+        if (relativeCoordians > 0.15)
+        {
+            target_pose_left.pose.position.x = last_pose_left.pose.position.x + delta_position[1];
+            target_pose_left.pose.position.y = last_pose_left.pose.position.y - delta_position[0];
+            target_pose_left.pose.position.z = last_pose_left.pose.position.z + delta_position[2];
 
-        // target_pose_left.pose.orientation.x = last_msgs_left->pose.orientation.w;
-        // target_pose_left.pose.orientation.y = last_msgs_left->pose.orientation.z;
-        // target_pose_left.pose.orientation.z = last_msgs_left->pose.orientation.x;
-        // target_pose_left.pose.orientation.w = -last_msgs_left->pose.orientation.y;
-        // ur_q_target_left_scale = scaleRotation(ur_q_target_left, 1.0);
-        target_pose_left.pose.orientation.x = ur_q_target_left.x();
-        target_pose_left.pose.orientation.y = ur_q_target_left.y();
-        target_pose_left.pose.orientation.z = ur_q_target_left.z();
-        target_pose_left.pose.orientation.w = ur_q_target_left.w();
+            target_pose_left.pose.orientation.x = ur_q_target_left.x();
+            target_pose_left.pose.orientation.y = ur_q_target_left.y();
+            target_pose_left.pose.orientation.z = ur_q_target_left.z();
+            target_pose_left.pose.orientation.w = ur_q_target_left.w();
+        }
+        else
+        {
+            target_pose_left.pose = last_pose_left.pose;
+        }
 
         target_pub_left.publish(target_pose_left);
-
-        // publish target trajectory path
-        // path_left.header.stamp = ros::Time::now();
-        // path_left.header.frame_id = "left_base_link";
-        // if (path_config == 1)
-        // {
-        //     path_left.poses.push_back(target_pose_left);
-        //     path_pub_left.publish(path_left);
-        // }
-        // if (path_config == 2)
-        // {
-        //     path_left.poses.clear();
-        // }
 
         // record last time target poses
         last_pose_left.pose = target_pose_left.pose;
@@ -339,13 +324,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         target_pose_right.pose.orientation.y = 1.0;
         target_pose_right.pose.orientation.z = 0.0;
         target_pose_right.pose.orientation.w = 0.0;
-        // target_pose_right.pose.position.x = current_pose_right.pose.position.x;
-        // target_pose_right.pose.position.y = current_pose_right.pose.position.y;
-        // target_pose_right.pose.position.z = current_pose_right.pose.position.z;
-        // target_pose_right.pose.orientation.x = current_pose_right.pose.orientation.x;
-        // target_pose_right.pose.orientation.y = current_pose_right.pose.orientation.y;
-        // target_pose_right.pose.orientation.z = current_pose_right.pose.orientation.z;
-        // target_pose_right.pose.orientation.w = current_pose_right.pose.orientation.w;
+
         target_pub_right.publish(target_pose_right);
 
         // calculate APF
@@ -366,17 +345,27 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         ur_q_target_right = delta_q_right * ur_q_cur_right;
 
-        target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-        target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
-        target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
-        // target_pose_right.pose.orientation.x = -last_msgs_right->pose.orientation.w;
-        // target_pose_right.pose.orientation.y = -last_msgs_right->pose.orientation.z;
-        // target_pose_right.pose.orientation.z = last_msgs_right->pose.orientation.x;
-        // target_pose_right.pose.orientation.w = -last_msgs_right->pose.orientation.y;
-        target_pose_right.pose.orientation.x = ur_q_target_right.x();
-        target_pose_right.pose.orientation.y = ur_q_target_right.y();
-        target_pose_right.pose.orientation.z = ur_q_target_right.z();
-        target_pose_right.pose.orientation.w = ur_q_target_right.w();
+        // collision detection
+        rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
+        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
+        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
+        vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
+        relativeCoordians = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
+        if (relativeCoordians > 0.15)
+        {
+            target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
+            target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
+            target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
+
+            target_pose_right.pose.orientation.x = ur_q_target_right.x();
+            target_pose_right.pose.orientation.y = ur_q_target_right.y();
+            target_pose_right.pose.orientation.z = ur_q_target_right.z();
+            target_pose_right.pose.orientation.w = ur_q_target_right.w();
+        }
+        else
+        {
+            target_pose_right.pose = last_pose_right.pose;
+        }
 
         target_pub_right.publish(target_pose_right);
         last_pose_right.pose = target_pose_right.pose;
@@ -410,6 +399,27 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     vf.eta_v = sc.drp.eta_v;
     target_cylinder->R = sc.drp.radius;
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
+}
+
+vector<float> TeleOperation::calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor)
+{
+    // 输入已知的坐标
+    vector<float> left_base(3, 0.0f);
+    vector<float> right_base(3, 0.0f);
+    left_base[0] = -0.65;
+    left_base[1] = 0.0;
+    left_base[2] = 0.0;
+    right_base = left_base;
+    right_base[0] = 0.65;
+
+    vector<float> relative_distance(3, 0.0f);
+    float tmp_left = leftRetractor[0] + left_base[0];
+    float tmp_right = -rightRetractor[1] + left_base[1];
+    relative_distance[0] = abs(tmp_right - tmp_left);
+    relative_distance[1] = abs(rightRetractor[1] - leftRetractor[1]);
+    relative_distance[2] = abs(rightRetractor[2] - leftRetractor[2]);
+
+    return relative_distance;
 }
 
 void TeleOperation::callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left)
