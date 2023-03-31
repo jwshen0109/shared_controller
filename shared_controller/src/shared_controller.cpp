@@ -108,17 +108,17 @@ TeleOperation::TeleOperation()
     outFile.open("/home/ur5e/Code/shared_control/data/prob.txt");
 
     // APF init
-    target_cylinder = new Cylinder(0.6, 0.0, 0.15);
-    p_current = new Point(0, 0, 0);
-    T(0, 0) = 0.5;
-    T(0, 1) = 0.5;
-    T(0, 2) = 0.0;
-    T(1, 0) = 1 / 6;
-    T(1, 1) = 1 / 2;
-    T(1, 2) = 1 / 3;
-    T(2, 0) = 0.0;
-    T(2, 1) = 1 / 3;
-    T(2, 2) = 2 / 3;
+    // target_cylinder = new Cylinder(0.6, 0.0, 0.15);
+    // p_current = new Point2D(0, 0, 0);
+    // T(0, 0) = 0.5;
+    // T(0, 1) = 0.5;
+    // T(0, 2) = 0.0;
+    // T(1, 0) = 1 / 6;
+    // T(1, 1) = 1 / 2;
+    // T(1, 2) = 1 / 3;
+    // T(2, 0) = 0.0;
+    // T(2, 1) = 1 / 3;
+    // T(2, 2) = 2 / 3;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -239,9 +239,9 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
         leftRetractor_Coordians[1] = last_pose_left.pose.position.y - delta_position[0];
         leftRetractor_Coordians[2] = last_pose_left.pose.position.z + delta_position[2];
         vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
-        relativeCoordians = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
+        relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
 
-        if (relativeCoordians > 0.15)
+        if (relativeDistance > 0.15)
         {
             target_pose_left.pose.position.x = last_pose_left.pose.position.x + delta_position[1];
             target_pose_left.pose.position.y = last_pose_left.pose.position.y - delta_position[0];
@@ -328,9 +328,9 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         target_pub_right.publish(target_pose_right);
 
         // calculate APF
-        p_current->x = target_pose_right.pose.position.x;
-        p_current->y = target_pose_right.pose.position.y;
-        p_current->z = target_pose_right.pose.position.z;
+        // p_current->x = target_pose_right.pose.position.x;
+        // p_current->y = target_pose_right.pose.position.y;
+        // p_current->z = target_pose_right.pose.position.z;
 
         last_pose_right.pose = target_pose_right.pose;
         first_flag_right = 1;
@@ -350,8 +350,9 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
         rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
         vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
-        relativeCoordians = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
-        if (relativeCoordians > 0.15)
+        relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
+        ROS_INFO("relative distance: %f", relativeDistance);
+        if (relativeDistance > 0.15)
         {
             target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
             target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
@@ -370,12 +371,12 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         target_pub_right.publish(target_pose_right);
         last_pose_right.pose = target_pose_right.pose;
 
-        p_current->x = target_pose_right.pose.position.x;
-        p_current->y = target_pose_right.pose.position.y;
-        p_current->z = target_pose_right.pose.position.z;
-        cur_vel[0] = -delta_position[4];
-        cur_vel[1] = delta_position[3];
-        cur_vel[2] = delta_position[5];
+        // p_current->x = target_pose_right.pose.position.x;
+        // p_current->y = target_pose_right.pose.position.y;
+        // p_current->z = target_pose_right.pose.position.z;
+        // cur_vel[0] = -delta_position[4];
+        // cur_vel[1] = delta_position[3];
+        // cur_vel[2] = delta_position[5];
     }
     else
     {
@@ -384,9 +385,9 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         last_pose_right.header.frame_id = "right_base_link";
         target_pub_right.publish(last_pose_right);
 
-        p_current->x = last_pose_right.pose.position.x;
-        p_current->y = last_pose_right.pose.position.y;
-        p_current->z = last_pose_right.pose.position.z;
+        // p_current->x = last_pose_right.pose.position.x;
+        // p_current->y = last_pose_right.pose.position.y;
+        // p_current->z = last_pose_right.pose.position.z;
     }
 
     last_sigma_right.pose.position = last_msgs_right->pose.position;
@@ -395,9 +396,9 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     last_sigma_right.pose.orientation.z = q_target_right.z();
     last_sigma_right.pose.orientation.w = q_target_right.w();
 
-    vf.eta_p = sc.drp.eta_p;
-    vf.eta_v = sc.drp.eta_v;
-    target_cylinder->R = sc.drp.radius;
+    // vf.eta_p = sc.drp.eta_p;
+    // vf.eta_v = sc.drp.eta_v;
+    // target_cylinder->R = sc.drp.radius;
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
 }
 

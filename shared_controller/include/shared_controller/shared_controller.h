@@ -110,7 +110,7 @@ public:
     std::vector<double> toEulerAngle(Eigen::Quaterniond &q);
 
 public:
-    Point *p_current;
+    Point2D *p_current;
     Cylinder *target_cylinder;
     VirtualFixture vf;
     SharedController sc;
@@ -125,7 +125,7 @@ private:
     vector<float> retractor_nForce = vector<float>(2, 0.0f);
     vector<float> leftRetractor_Coordians = vector<float>(3, 0.0f);
     vector<float> rightRetractor_Coordians = vector<float>(3, 0.0f);
-    float relativeCoordians = 0.0f;
+    float relativeDistance = 0.0f;
 
 private:
     ros::NodeHandle nh;

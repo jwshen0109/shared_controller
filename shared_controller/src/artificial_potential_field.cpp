@@ -14,16 +14,16 @@ APF::APF()
     //
 }
 
-float APF::distanceCalculation(Point &p1, Point &p2)
+float APF::distanceCalculation(Point2D &p1, Point2D &p2)
 {
-    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2) + pow(p1.z - p2.z, 2));
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
 }
 
-forceVector APF::forceAttraction(Point &p_target, Point &p_current)
+forceVector APF::forceAttraction(Point2D &p_target, Point2D &p_current)
 {
     dis_att = distanceCalculation(p_target, p_current);
-    double force_att = eta * dis_att;
-    Point p_Fatt(force_att / dis_att * (p_target.x - p_current.x) + p_current.x, force_att / dis_att * (p_target.y - p_current.y) + p_current.y, force_att / dis_att * (p_target.z - p_current.z) + p_current.z);
+    double force_att = eta_att * dis_att;
+    Point2D p_Fatt(force_att / dis_att * (p_target.x - p_current.x) + p_current.x, force_att / dis_att * (p_target.y - p_current.y) + p_current.y);
     forceVector vFatt(p_current, p_Fatt);
     return vFatt;
 }
@@ -35,27 +35,27 @@ forceVector APF::xFedge(Point2D &retractor_cur, float v_x)
     Point2D pFedge(0.0, 0.0);
     if (-(edge_width - retractor_width / 2) <= retractor_cur.x && retractor_cur.x < 0.0)
     {
-        Fedge = eta_repulsion * pow(retractor_cur.x, 2) / 3;
+        Fedge = eta_rep * pow(retractor_cur.x, 2) / 3;
         pFedge = Point2D(retractor_cur.x + Fedge, retractor_cur.y);
     }
     else if (retractor_cur.x >= 0.0 && retractor_cur.x <= (edge_width - retractor_width / 2))
     {
-        Fedge = eta_repulsion * pow(retractor_cur.x, 2) / 3;
+        Fedge = eta_rep * pow(retractor_cur.x, 2) / 3;
         pFedge = Point2D(retractor_cur.x - Fedge, retractor_cur.y);
     }
     else if (-edge_width < retractor_cur.x && retractor_cur.x < -(edge_width - retractor_width / 2))
     {
-        Fedge = eta_repulsion * v_x * pow(e, -retractor_cur.x);
+        Fedge = eta_rep * v_x * pow(e, -retractor_cur.x);
         pFedge = Point2D(retractor_cur.x + Fedge, retractor_cur.y);
     }
     else if ((edge_width - retractor_width / 2) < retractor_cur.x && retractor_cur.x < edge_width)
     {
-        Fedge = eta_repulsion * v_x * pow(e, retractor_cur.x);
+        Fedge = eta_rep * v_x * pow(e, retractor_cur.x);
         pFedge = Point2D(retractor_cur.x - Fedge, retractor_cur.y);
     }
 
     forceVector vFedge(retractor_cur, pFedge);
-    vFedge.printVector("vFedge");
+    // vFedge.printVector("vFedge");
     // vFedge.drawVector();
 
     return vFedge;
@@ -67,27 +67,27 @@ forceVector APF::yFedge(Point2D &retractor_cur, float v_y)
     Point2D pFedge(0.0, 0.0);
     if (-(edge_height - retractor_height / 2) <= retractor_cur.y && retractor_cur.y < 0.0)
     {
-        Fedge = eta_repulsion * pow(retractor_cur.y, 2) / 3;
+        Fedge = eta_rep * pow(retractor_cur.y, 2) / 3;
         pFedge = Point2D(retractor_cur.y + Fedge, retractor_cur.x);
     }
     else if (retractor_cur.y >= 0.0 && retractor_cur.y <= (edge_height - retractor_height / 2))
     {
-        Fedge = eta_repulsion * pow(retractor_cur.y, 2) / 3;
+        Fedge = eta_rep * pow(retractor_cur.y, 2) / 3;
         pFedge = Point2D(retractor_cur.y - Fedge, retractor_cur.x);
     }
     else if (-edge_height < retractor_cur.y && retractor_cur.y < -(edge_height - retractor_height / 2))
     {
-        Fedge = eta_repulsion * v_y * pow(e, -retractor_cur.y);
+        Fedge = eta_rep * v_y * pow(e, -retractor_cur.y);
         pFedge = Point2D(retractor_cur.y + Fedge, retractor_cur.x);
     }
     else if ((edge_height - retractor_height / 2) < retractor_cur.y && retractor_cur.y < edge_height)
     {
-        Fedge = eta_repulsion * v_y * pow(e, retractor_cur.y);
+        Fedge = eta_rep * v_y * pow(e, retractor_cur.y);
         pFedge = Point2D(retractor_cur.y - Fedge, retractor_cur.x);
     }
 
     forceVector vFedge(retractor_cur, pFedge);
-    vFedge.printVector("vFedge");
+    // vFedge.printVector("vFedge");
     // vFedge.drawVector();
 
     return vFedge;
@@ -97,7 +97,8 @@ float APF::Process(Point2D &retractor_cur, vector<float> vel_cur)
 {
     forceVector vxFtotal = xFedge(retractor_cur, vel_cur[0]);
     forceVector vyFtotal = yFedge(retractor_cur, vel_cur[1]);
-    float dis = vel_cur * delta_t + vFtotal.length * pow(delta_t, 2) / 2;
+    forceVector vFtotal = vFtotal.addVector(vxFtotal, vyFtotal);
+    float dis = sqrt(pow(vel_cur[0], 2) + pow(vel_cur[1], 2)) * delta_t + vFtotal.length * pow(delta_t, 2) / 2;
 
     return dis;
 }
@@ -108,7 +109,7 @@ VirtualFixture::VirtualFixture()
     vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/sigma/force_feedback", 1);
 }
 
-vector<float> VirtualFixture::minDistancePoint(Point &p0, Cylinder &C0)
+vector<float> VirtualFixture::minDistancePoint(Point2D &p0, Cylinder &C0)
 {
     vector<float> p_result(3, 0.0);
     float d_r = sqrt(pow(p0.x - C0.x, 2) + pow(p0.y - C0.y, 2));
@@ -125,7 +126,7 @@ vector<float> VirtualFixture::minDistancePoint(Point &p0, Cylinder &C0)
     return p_result;
 }
 
-void VirtualFixture::PublishVirtualForce(Point &p0, Cylinder &C0, vector<float> &velocity)
+void VirtualFixture::PublishVirtualForce(Point2D &p0, Cylinder &C0, vector<float> &velocity)
 {
     vector<float> p_result = minDistancePoint(p0, C0);
     geometry_msgs::WrenchStamped virtual_force;

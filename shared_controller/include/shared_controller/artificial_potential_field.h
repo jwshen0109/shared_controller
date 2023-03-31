@@ -56,7 +56,7 @@ public:
 class forceVector
 {
 public:
-    forceVector(Point p1, Point p2) : p_start(p1), p_end(p2)
+    forceVector(Point2D p1, Point2D p2) : p_start(p1), p_end(p2)
     {
         length = sqrt(pow((p_end.x - p_start.x), 2) + pow(p_end.y - p_start.y, 2));
     };
@@ -64,8 +64,8 @@ public:
     forceVector addVector(forceVector v1, forceVector v2);
 
 public:
-    Point p_start;
-    Point p_end;
+    Point2D p_start;
+    Point2D p_end;
     float length;
 };
 
@@ -75,9 +75,9 @@ public:
     APF();
     ~APF();
 
-    float distanceCalculation(Point &p1, Point &p2);
+    float distanceCalculation(Point2D &p1, Point2D &p2);
 
-    forceVector forceAttraction(Point &p_target, Point &p_current);
+    forceVector forceAttraction(Point2D &p_target, Point2D &p_current);
 
     forceVector xFedge(Point2D &retractor_cur, float v_x);
     forceVector yFedge(Point2D &retractor_cur, float v_y);
@@ -89,8 +89,8 @@ public:
 
 private:
     float dis_att;
-    float eta_attr = 0.3;
-    float eta_repulsion = 0.02;
+    float eta_att = 0.3;
+    float eta_rep = 0.02;
     float delta_t = 0.005;
 
     // retractor size
@@ -105,8 +105,8 @@ class VirtualFixture
 {
 public:
     VirtualFixture();
-    vector<float> minDistancePoint(Point &p0, Cylinder &C0);
-    void PublishVirtualForce(Point &p0, Cylinder &C0, vector<float> &velocity);
+    vector<float> minDistancePoint(Point2D &p0, Cylinder &C0);
+    void PublishVirtualForce(Point2D &p0, Cylinder &C0, vector<float> &velocity);
 
 public:
     ros::NodeHandle nh;
