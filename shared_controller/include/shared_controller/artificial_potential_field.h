@@ -78,6 +78,7 @@ public:
     float distanceCalculation(Point2D &p1, Point2D &p2);
 
     forceVector forceAttraction(Point2D &p_target, Point2D &p_current);
+    forceVector forceAttByForceReference(float retractor_force);
 
     forceVector xFedge(Point2D &retractor_cur, float v_x);
     forceVector yFedge(Point2D &retractor_cur, float v_y);

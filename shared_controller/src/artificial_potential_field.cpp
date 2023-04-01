@@ -28,6 +28,10 @@ forceVector APF::forceAttraction(Point2D &p_target, Point2D &p_current)
     return vFatt;
 }
 
+forceVector APF::forceAttByForceReference(float retractor_force)
+{
+}
+
 //
 forceVector APF::xFedge(Point2D &retractor_cur, float v_x)
 {

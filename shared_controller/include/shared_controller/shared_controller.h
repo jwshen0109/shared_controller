@@ -207,6 +207,8 @@ private:
     Eigen::Matrix3d T = Eigen::Matrix3d::Identity();
 
     std::ofstream outFile;
+    std::ofstream outVel;
+    std::ofstream outAngle;
 };
 
 class TouchTeleOperation

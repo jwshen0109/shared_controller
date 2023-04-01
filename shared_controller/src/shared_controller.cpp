@@ -105,6 +105,8 @@ TeleOperation::TeleOperation()
     // server.setCallback(f);
     single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
 
+    outVel.open("/home/ur5e/Code/shared_control/data/vel.txt");
+    outAngle.open("/home/ur5e/Code/shared_control/data/angle.txt");
     outFile.open("/home/ur5e/Code/shared_control/data/prob.txt");
 
     // APF init
@@ -309,7 +311,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
     vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
     relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
-    ROS_INFO("relative distance: %f", relativeDistance);
+    // ROS_INFO("relative distance: %f", relativeDistance);
 
     q_cur_right.x() = q_target_right.x();
     q_cur_right.y() = q_target_right.y();
@@ -461,6 +463,10 @@ void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistSt
         angle_right[0] = acos(rx_cos) * 180 / PI;
         angle_right[1] = acos(ry_cos) * 180 / PI;
         angle_right[2] = acos(rz_cos) * 180 / PI;
+        outVel << velocity_right[0] << "\t" << velocity_right[1] << "\t" << velocity_right[2] << std::endl;
+        outAngle << angle_right[0] << "\t";
+        outAngle << angle_right[1] << "\t";
+        outAngle << angle_right[2] << std::endl;
         if (angle_right[2] > 90)
         {
             angle_right[2] = 90;
