@@ -196,6 +196,13 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
     delta_position[1] = last_msgs_left->pose.position.y - last_sigma_left.pose.position.y;
     delta_position[2] = last_msgs_left->pose.position.z - last_sigma_left.pose.position.z;
 
+    // collision detection
+    leftRetractor_Coordians[0] = last_pose_left.pose.position.x + delta_position[1];
+    leftRetractor_Coordians[1] = last_pose_left.pose.position.y - delta_position[0];
+    leftRetractor_Coordians[2] = last_pose_left.pose.position.z + delta_position[2];
+    // vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
+    // relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
+
     // delta orientation of sigma7
     q_cur_left.x() = q_target_left.x();
     q_cur_left.y() = q_target_left.y();
@@ -234,14 +241,7 @@ void TeleOperation::callback_left(const geometry_msgs::PoseStampedConstPtr &last
 
         ur_q_target_left = delta_q_left * ur_q_cur_left;
 
-        // collision detection
-        leftRetractor_Coordians[0] = last_pose_left.pose.position.x + delta_position[1];
-        leftRetractor_Coordians[1] = last_pose_left.pose.position.y - delta_position[0];
-        leftRetractor_Coordians[2] = last_pose_left.pose.position.z + delta_position[2];
-        vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
-        relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
-
-        if (relativeDistance > 0.15)
+        if (relativeDistance > 0.1)
         {
             target_pose_left.pose.position.x = last_pose_left.pose.position.x + delta_position[1];
             target_pose_left.pose.position.y = last_pose_left.pose.position.y - delta_position[0];
@@ -303,6 +303,14 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     delta_position[4] = last_msgs_right->pose.position.y - last_sigma_right.pose.position.y;
     delta_position[5] = last_msgs_right->pose.position.z - last_sigma_right.pose.position.z;
 
+    // collision detection
+    rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
+    rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
+    rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
+    vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
+    relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
+    ROS_INFO("relative distance: %f", relativeDistance);
+
     q_cur_right.x() = q_target_right.x();
     q_cur_right.y() = q_target_right.y();
     q_cur_right.z() = q_target_right.z();
@@ -345,14 +353,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         ur_q_target_right = delta_q_right * ur_q_cur_right;
 
-        // collision detection
-        rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
-        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
-        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
-        vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
-        relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
-        ROS_INFO("relative distance: %f", relativeDistance);
-        if (relativeDistance > 0.15)
+        if (relativeDistance > 0.1)
         {
             target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
             target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
@@ -410,12 +411,13 @@ vector<float> TeleOperation::calculateRetractorDis(vector<float> &leftRetractor,
     left_base[0] = -0.65;
     left_base[1] = 0.0;
     left_base[2] = 0.0;
-    right_base = left_base;
     right_base[0] = 0.65;
+    right_base[1] = 0.0;
+    right_base[2] = 0.0;
 
     vector<float> relative_distance(3, 0.0f);
     float tmp_left = leftRetractor[0] + left_base[0];
-    float tmp_right = -rightRetractor[1] + left_base[1];
+    float tmp_right = -rightRetractor[0] + right_base[0];
     relative_distance[0] = abs(tmp_right - tmp_left);
     relative_distance[1] = abs(rightRetractor[1] - leftRetractor[1]);
     relative_distance[2] = abs(rightRetractor[2] - leftRetractor[2]);
