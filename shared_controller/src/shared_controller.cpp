@@ -38,7 +38,7 @@ void SharedController::twistCallback(const geometry_msgs::TwistStampedConstPtr &
     geometry_msgs::WrenchStamped reference_force;
     reference_force.header.stamp = ros::Time::now();
     reference_force.header.frame_id = "retractor";
-    reference_force.wrench.force.x = -drp.ref_force_x;
+    reference_force.wrench.force.x = -1.0;
     reference_force.wrench.force.y = 0.0;
     reference_force.wrench.force.z = 0.0;
     reference_force.wrench.torque.x = 0.0;
@@ -131,6 +131,7 @@ void TeleOperation::configCallback(shared_controller::commandConfig &config, uin
     drp.kd = config.kd;
     drp.blend = config.blend;
     drp.scale = config.scale;
+    drp.delta_step = config.delta_step;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -318,7 +319,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // collision detection
     if (drp.blend)
     {
-        auto_delta_position = forceControl(retractor_nForce[1]);
+        auto_delta_position = forceToMotionControl(retractor_nForce[1]);
         // ROS_INFO("x: %f y: %f z: %f", auto_delta_position[0], auto_delta_position[1], auto_delta_position[2]);
         rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
         rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
@@ -382,12 +383,12 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         {
             if (drp.blend)
             {
-                // rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
-                // rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
-                // rightRetractor_Coordians[2] = last_pose_right.pose.position.z + auto_delta_position[2];
-                target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-                target_pose_right.pose.position.y = last_pose_right.pose.position.y + drp.scale * delta_position[3];
-                target_pose_right.pose.position.z = last_pose_right.pose.position.z + drp.scale * delta_position[5];
+                target_pose_right.pose.position.x = last_pose_right.pose.position.x + auto_delta_position[0];
+                target_pose_right.pose.position.y = last_pose_right.pose.position.y + auto_delta_position[1];
+                target_pose_right.pose.position.z = last_pose_right.pose.position.z + auto_delta_position[2];
+                // target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
+                // target_pose_right.pose.position.y = last_pose_right.pose.position.y + drp.scale * delta_position[3];
+                // target_pose_right.pose.position.z = last_pose_right.pose.position.z + drp.scale * delta_position[5];
 
                 target_pose_right.pose.orientation.x = ur_q_target_right.x();
                 target_pose_right.pose.orientation.y = ur_q_target_right.y();
@@ -438,15 +439,16 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
 }
 
-vector<float> TeleOperation::forceControl(float retractor_nForce)
+vector<float> TeleOperation::forceToMotionControl(float retractor_nForce)
 {
-    float dis = drp.kd * (0.0 - 1.0) * delta_dis;
+    float dis = drp.kd * (1.0 - retractor_nForce) * drp.delta_step;
 
-    vector<float> delta_positon(3, 0.0);
-    delta_position[0] = -dis * sin(30 * PI / 180);
-    delta_position[2] = dis * cos(30 * PI / 180);
-    ROS_INFO("dis: %f, x: %f, y: %f, z: %f", dis, delta_positon[0], delta_positon[1], delta_positon[2]);
-    return delta_positon;
+    vector<float> delta_position_tmp(3, 0.0);
+    // delta_position_tmp[0] = dis * sin(30 * PI / 180);
+    // delta_position_tmp[2] = -dis * cos(30 * PI / 180);
+    // ROS_INFO("dis: %f, x: %f, y: %f, z: %f", dis, delta_position_tmp[0], delta_position_tmp[1], delta_position_tmp[2]);
+    delta_position_tmp[0] = -dis;
+    return delta_position_tmp;
 }
 
 void TeleOperation::activeRetractionAPF(Point2D &retractor_cur)

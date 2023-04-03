@@ -29,7 +29,7 @@ using namespace std;
 
 struct dynamic_reconfigure_params
 {
-    double ref_force_x = 0.0;
+    float delta_step = 0.0;
     double scale = 0.1;
     float eta_p = 0.0;
     float eta_v = 0.0;
@@ -103,7 +103,7 @@ public:
 
     void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg);
 
-    vector<float> forceControl(float retractor_nForce);
+    vector<float> forceToMotionControl(float retractor_nForce);
 
     void activeRetractionAPF(Point2D &retractor_cur);
 
@@ -147,8 +147,8 @@ private:
     float relativeDistance = 0.0f;
 
     // force control
-    float kd = 1.0f;
-    float delta_dis = 1.0f;
+    // float kd = 1.0f;
+    // float delta_dis = 0.1f;
 
 private:
     ros::NodeHandle nh;
