@@ -73,7 +73,7 @@ class APF
 {
 public:
     APF();
-    ~APF();
+    // ~APF();
 
     float distanceCalculation(Point2D &p1, Point2D &p2);
 

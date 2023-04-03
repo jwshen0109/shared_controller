@@ -33,7 +33,9 @@ struct dynamic_reconfigure_params
     double scale = 1.0;
     float eta_p = 0.0;
     float eta_v = 0.0;
-    float radius = 0.0;
+    float kd = 0.0;
+
+    bool apf = false;
 };
 
 class SharedController
@@ -96,8 +98,13 @@ public:
 
     void current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity);
 
-    // void configCallback(sigma_client::PathGenerationConfig &config, uint32_t level);
+    void configCallback(shared_controller::commandConfig &config, uint32_t level);
+
     void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg);
+
+    vector<float> forceControl(float retractor_nForce);
+
+    void activeRetractionAPF(Point2D &retractor_cur);
 
     void updateProbability();
 
@@ -110,12 +117,23 @@ public:
     std::vector<double> toEulerAngle(Eigen::Quaterniond &q);
 
 public:
-    Point2D *p_current;
-    Cylinder *target_cylinder;
+    // for APF
+    APF apf;
+    // forceVector forceVector;
+    Point2D *retractor_cur;
+    Point2D *p0;
+    vector<float> xyForce = vector<float>(2, 0.0f);
+
+    dynamic_reconfigure_params drp;
+
+    // Cylinder *target_cylinder;
     VirtualFixture vf;
     SharedController sc;
     Predictor predictor;
+
+    // shared control
     vector<vector<float>> probability = vector<vector<float>>(3, vector<float>(3, 0.0));
+    vector<float> auto_delta_position = vector<float>(3, 0.0f);
 
 private:
     vector<float> netForceCalculation(vector<float> &singlePointForce);
@@ -126,6 +144,10 @@ private:
     vector<float> leftRetractor_Coordians = vector<float>(3, 0.0f);
     vector<float> rightRetractor_Coordians = vector<float>(3, 0.0f);
     float relativeDistance = 0.0f;
+
+    // force control
+    float kd = 1.0f;
+    float delta_dis = 0.001f;
 
 private:
     ros::NodeHandle nh;
@@ -192,8 +214,8 @@ private:
     int first_flag_right = 0;
 
     // dynamic_reconfigure config
-    // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig> server;
-    // dynamic_reconfigure::Server<sigma_client::PathGenerationConfig>::CallbackType f;
+    dynamic_reconfigure::Server<shared_controller::commandConfig> server;
+    dynamic_reconfigure::Server<shared_controller::commandConfig>::CallbackType f;
     // int path_config = 0;
 
     // for velocity angle

@@ -69,13 +69,13 @@ void SharedController::publishFtSensorForce()
 
 void SharedController::configCallback(shared_controller::commandConfig &config, uint32_t level)
 {
-    init = config.init;
-    // goal = config.goal_select;
-    drp.ref_force_x = config.ref_force_x;
-    drp.scale = config.scale;
-    drp.eta_p = config.eta_p;
-    drp.eta_v = config.eta_v;
-    drp.radius = config.cylinder_radius;
+    // init = config.init;
+    // // goal = config.goal_select;
+    // drp.ref_force_x = config.ref_force_x;
+    // drp.scale = config.scale;
+    // drp.eta_p = config.eta_p;
+    // drp.eta_v = config.eta_v;
+    // drp.radius = config.cylinder_radius;
 }
 
 TeleOperation::TeleOperation()
@@ -100,10 +100,12 @@ TeleOperation::TeleOperation()
 
     sub_current_velocity_left = nh.subscribe("/left/cartesian_motion_controller/current_velocity", 1, &TeleOperation::current_velocity_callback_left, this);
     sub_current_velocity_right = nh.subscribe("/right/cartesian_motion_controller/current_velocity", 1, &TeleOperation::current_velocity_callback_right, this);
-    // dynamic param config
-    // f = boost::bind(&TeleManipulation::configCallback, this, _1, _2);
-    // server.setCallback(f);
+
     single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
+
+    // dynamic param config
+    f = boost::bind(&TeleOperation::configCallback, this, _1, _2);
+    server.setCallback(f);
 
     outVel.open("/home/ur5e/Code/shared_control/data/vel.txt");
     outAngle.open("/home/ur5e/Code/shared_control/data/angle.txt");
@@ -121,6 +123,12 @@ TeleOperation::TeleOperation()
     // T(2, 0) = 0.0;
     // T(2, 1) = 1 / 3;
     // T(2, 2) = 2 / 3;
+}
+
+void TeleOperation::configCallback(shared_controller::commandConfig &config, uint32_t level)
+{
+    drp.apf = config.apf;
+    drp.kd = config.kd;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -306,9 +314,20 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     delta_position[5] = last_msgs_right->pose.position.z - last_sigma_right.pose.position.z;
 
     // collision detection
-    rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
-    rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
-    rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
+    if (drp.apf)
+    {
+        auto_delta_position = forceControl(retractor_nForce[1]);
+        rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
+        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
+        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + auto_delta_position[2];
+    }
+    else
+    {
+        rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
+        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
+        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
+    }
+
     vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
     relativeDistance = sqrt(pow(dis[0], 2) + pow(dis[1], 2) + pow(dis[2], 2));
     // ROS_INFO("relative distance: %f", relativeDistance);
@@ -355,16 +374,26 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         ur_q_target_right = delta_q_right * ur_q_cur_right;
 
+        // collision
         if (relativeDistance > 0.1)
         {
-            target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-            target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
-            target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
+            if (drp.apf)
+            {
+                rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
+                rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
+                rightRetractor_Coordians[2] = last_pose_right.pose.position.z + auto_delta_position[2];
+            }
+            else
+            {
+                target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
+                target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
+                target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
 
-            target_pose_right.pose.orientation.x = ur_q_target_right.x();
-            target_pose_right.pose.orientation.y = ur_q_target_right.y();
-            target_pose_right.pose.orientation.z = ur_q_target_right.z();
-            target_pose_right.pose.orientation.w = ur_q_target_right.w();
+                target_pose_right.pose.orientation.x = ur_q_target_right.x();
+                target_pose_right.pose.orientation.y = ur_q_target_right.y();
+                target_pose_right.pose.orientation.z = ur_q_target_right.z();
+                target_pose_right.pose.orientation.w = ur_q_target_right.w();
+            }
         }
         else
         {
@@ -373,13 +402,6 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         target_pub_right.publish(target_pose_right);
         last_pose_right.pose = target_pose_right.pose;
-
-        // p_current->x = target_pose_right.pose.position.x;
-        // p_current->y = target_pose_right.pose.position.y;
-        // p_current->z = target_pose_right.pose.position.z;
-        // cur_vel[0] = -delta_position[4];
-        // cur_vel[1] = delta_position[3];
-        // cur_vel[2] = delta_position[5];
     }
     else
     {
@@ -403,6 +425,25 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // vf.eta_v = sc.drp.eta_v;
     // target_cylinder->R = sc.drp.radius;
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
+}
+
+vector<float> TeleOperation::forceControl(float retractor_nForce)
+{
+    float dis = drp.kd * (retractor_nForce - 1.0) * delta_dis;
+
+    vector<float> delta_positon(3, 0.0f);
+    delta_position[0] = -dis * sin(6 / PI);
+    delta_position[2] = -dis * cos(6 / PI);
+
+    return delta_positon;
+}
+
+void TeleOperation::activeRetractionAPF(Point2D &retractor_cur)
+{
+    forceVector xFedge = apf.xFedge(retractor_cur, velocity_right[0]);
+    forceVector yFedge = apf.yFedge(retractor_cur, velocity_right[1]);
+    xyForce[0] = xFedge.length;
+    xyForce[1] = yFedge.length;
 }
 
 vector<float> TeleOperation::calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor)
