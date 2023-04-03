@@ -30,7 +30,7 @@ using namespace std;
 struct dynamic_reconfigure_params
 {
     double ref_force_x = 0.0;
-    double scale = 1.0;
+    double scale = 0.1;
     float eta_p = 0.0;
     float eta_v = 0.0;
     float kd = 0.0;
@@ -64,8 +64,8 @@ private:
     ros::Subscriber sigma_twist_sub;
     ros::Subscriber sigma_button_sub;
 
-    dynamic_reconfigure::Server<shared_controller::commandConfig> server;
-    dynamic_reconfigure::Server<shared_controller::commandConfig>::CallbackType f;
+    // dynamic_reconfigure::Server<shared_controller::commandConfig> server;
+    // dynamic_reconfigure::Server<shared_controller::commandConfig>::CallbackType f;
 
 private:
     // dynamic config
@@ -148,7 +148,7 @@ private:
 
     // force control
     float kd = 1.0f;
-    float delta_dis = 0.001f;
+    float delta_dis = 1.0f;
 
 private:
     ros::NodeHandle nh;
