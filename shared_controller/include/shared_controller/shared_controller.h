@@ -36,6 +36,7 @@ struct dynamic_reconfigure_params
     float kd = 0.0;
 
     bool apf = false;
+    bool blend = false;
 };
 
 class SharedController

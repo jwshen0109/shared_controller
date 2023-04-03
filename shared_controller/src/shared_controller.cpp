@@ -129,6 +129,8 @@ void TeleOperation::configCallback(shared_controller::commandConfig &config, uin
 {
     drp.apf = config.apf;
     drp.kd = config.kd;
+    drp.blend = config.blend;
+    drp.scale = config.scale;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -314,7 +316,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     delta_position[5] = last_msgs_right->pose.position.z - last_sigma_right.pose.position.z;
 
     // collision detection
-    if (drp.apf)
+    if (drp.blend)
     {
         auto_delta_position = forceControl(retractor_nForce[1]);
         rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
@@ -324,8 +326,8 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     else
     {
         rightRetractor_Coordians[0] = last_pose_right.pose.position.x - delta_position[4];
-        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + delta_position[3];
-        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + delta_position[5];
+        rightRetractor_Coordians[1] = last_pose_right.pose.position.y + drp.scale * delta_position[3];
+        rightRetractor_Coordians[2] = last_pose_right.pose.position.z + drp.scale * delta_position[5];
     }
 
     vector<float> dis = calculateRetractorDis(leftRetractor_Coordians, rightRetractor_Coordians);
@@ -377,7 +379,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         // collision
         if (relativeDistance > 0.1)
         {
-            if (drp.apf)
+            if (drp.blend)
             {
                 rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
                 rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
