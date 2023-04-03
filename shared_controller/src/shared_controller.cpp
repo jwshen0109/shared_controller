@@ -378,7 +378,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         ur_q_target_right = delta_q_right * ur_q_cur_right;
 
-        // collision
+        // collision threshold
         if (relativeDistance > 0.1)
         {
             if (drp.blend)
@@ -406,6 +406,8 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
                 target_pose_right.pose.orientation.z = ur_q_target_right.z();
                 target_pose_right.pose.orientation.w = ur_q_target_right.w();
             }
+            vector<float> euler = QuaternionToEulerAngle(last_pose_right);
+            ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
         }
         else
         {
@@ -567,42 +569,49 @@ void TeleOperation::getAngle()
     ROS_INFO("prob: %f", prob);
 }
 
-Eigen::Quaterniond TeleOperation::scaleRotation(Eigen::Quaterniond &q_current, double scale)
-{
-    Eigen::Quaterniond scale_q;
-    std::vector<double> eulerAngles = toEulerAngle(q_current);
-    for (int i = 0; i < 3; i++)
-    {
-        eulerAngles[0] *= scale;
-        eulerAngles[1] *= scale;
-        eulerAngles[2] *= scale;
-    }
-    Eigen::AngleAxisd rollAngle(Eigen::AngleAxisd(eulerAngles[0], ::Eigen::Vector3d::UnitX()));
-    Eigen::AngleAxisd pitchAngle(Eigen::AngleAxisd(eulerAngles[1], ::Eigen::Vector3d::UnitY()));
-    Eigen::AngleAxisd yawAngle(Eigen::AngleAxisd(eulerAngles[2], ::Eigen::Vector3d::UnitZ()));
-    scale_q = rollAngle * pitchAngle * yawAngle;
+// Eigen::Quaterniond TeleOperation::scaleRotation(Eigen::Quaterniond &q_current, double scale)
+// {
+//     Eigen::Quaterniond scale_q;
+//     std::vector<double> eulerAngles = toEulerAngle(q_current);
+//     for (int i = 0; i < 3; i++)
+//     {
+//         eulerAngles[0] *= scale;
+//         eulerAngles[1] *= scale;
+//         eulerAngles[2] *= scale;
+//     }
+//     Eigen::AngleAxisd rollAngle(Eigen::AngleAxisd(eulerAngles[0], ::Eigen::Vector3d::UnitX()));
+//     Eigen::AngleAxisd pitchAngle(Eigen::AngleAxisd(eulerAngles[1], ::Eigen::Vector3d::UnitY()));
+//     Eigen::AngleAxisd yawAngle(Eigen::AngleAxisd(eulerAngles[2], ::Eigen::Vector3d::UnitZ()));
+//     scale_q = rollAngle * pitchAngle * yawAngle;
 
-    return scale_q;
-}
+//     return scale_q;
+// }
 
-vector<double> TeleOperation::toEulerAngle(Eigen::Quaterniond &q)
+vector<float> TeleOperation::QuaternionToEulerAngle(geometry_msgs::PoseStamped &pose)
 {
-    std::vector<double> eulerAngles(3);
+
+    Eigen::Quaterniond q;
+    q.x() = pose.pose.orientation.x;
+    q.y() = pose.pose.orientation.y;
+    q.z() = pose.pose.orientation.z;
+    q.w() = pose.pose.orientation.w;
+
+    vector<float> eulerAngles(3);
     // roll (x-axis rotation)
-    double sinr_cosp = +2.0 * (q.w() * q.x() + q.y() * q.z());
-    double cosr_cosp = +1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y());
+    float sinr_cosp = +2.0 * (q.w() * q.x() + q.y() * q.z());
+    float cosr_cosp = +1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y());
     eulerAngles[0] = atan2(sinr_cosp, cosr_cosp);
 
     // pitch (y-axis rotation)
-    double sinp = +2.0 * (q.w() * q.y() - q.z() * q.x());
+    float sinp = +2.0 * (q.w() * q.y() - q.z() * q.x());
     if (fabs(sinp) >= 1)
         eulerAngles[1] = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
     else
         eulerAngles[1] = asin(sinp);
 
     // yaw (z-axis rotation)
-    double siny_cosp = +2.0 * (q.w() * q.z() + q.x() * q.y());
-    double cosy_cosp = +1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z());
+    float siny_cosp = +2.0 * (q.w() * q.z() + q.x() * q.y());
+    float cosy_cosp = +1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z());
     eulerAngles[2] = atan2(siny_cosp, cosy_cosp);
 
     return eulerAngles;

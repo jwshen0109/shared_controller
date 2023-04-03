@@ -113,9 +113,9 @@ public:
 
     vector<float> calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor);
 
-    Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
+    // Eigen::Quaterniond scaleRotation(Eigen::Quaterniond &q_current, double scale);
 
-    std::vector<double> toEulerAngle(Eigen::Quaterniond &q);
+    vector<float> QuaternionToEulerAngle(geometry_msgs::PoseStamped &pose);
 
 public:
     // for APF
