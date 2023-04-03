@@ -150,6 +150,8 @@ void TeleOperation::current_pose_callback_right(const geometry_msgs::PoseStamped
     {
         first_flag_right = 2;
     }
+    vector<float> euler = QuaternionToEulerAngle(current_pose_right);
+    ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
 }
 
 void TeleOperation::singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg)
@@ -406,8 +408,8 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
                 target_pose_right.pose.orientation.z = ur_q_target_right.z();
                 target_pose_right.pose.orientation.w = ur_q_target_right.w();
             }
-            vector<float> euler = QuaternionToEulerAngle(last_pose_right);
-            ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
+            // vector<float> euler = QuaternionToEulerAngle(last_pose_right);
+            // ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
         }
         else
         {
@@ -600,19 +602,19 @@ vector<float> TeleOperation::QuaternionToEulerAngle(geometry_msgs::PoseStamped &
     // roll (x-axis rotation)
     float sinr_cosp = +2.0 * (q.w() * q.x() + q.y() * q.z());
     float cosr_cosp = +1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y());
-    eulerAngles[0] = atan2(sinr_cosp, cosr_cosp);
+    eulerAngles[0] = atan2(sinr_cosp, cosr_cosp) * 180 / PI;
 
     // pitch (y-axis rotation)
     float sinp = +2.0 * (q.w() * q.y() - q.z() * q.x());
     if (fabs(sinp) >= 1)
-        eulerAngles[1] = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+        eulerAngles[1] = copysign(M_PI / 2, sinp) * 180 / PI; // use 90 degrees if out of range
     else
-        eulerAngles[1] = asin(sinp);
+        eulerAngles[1] = asin(sinp) * 180 / PI;
 
     // yaw (z-axis rotation)
     float siny_cosp = +2.0 * (q.w() * q.z() + q.x() * q.y());
     float cosy_cosp = +1.0 - 2.0 * (q.y() * q.y() + q.z() * q.z());
-    eulerAngles[2] = atan2(siny_cosp, cosy_cosp);
+    eulerAngles[2] = atan2(siny_cosp, cosy_cosp) * 180 / PI;
 
     return eulerAngles;
 }
