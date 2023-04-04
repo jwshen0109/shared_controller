@@ -87,6 +87,10 @@ public:
 
     void callback_right(const geometry_msgs::PoseStampedConstPtr &last_msgs_right);
 
+    void callback_vel_left(const geometry_msgs::TwistStampedConstPtr &last_vel);
+
+    void callback_vel_right(const geometry_msgs::TwistStampedConstPtr &last_vel);
+
     void callback_button_left(const sensor_msgs::JoyConstPtr &last_button_left);
 
     void callback_button_right(const sensor_msgs::JoyConstPtr &last_button_right);
@@ -108,8 +112,6 @@ public:
     void activeRetractionAPF(Point2D &retractor_cur);
 
     void updateProbability();
-
-    void getAngle();
 
     vector<float> calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor);
 
@@ -133,7 +135,7 @@ public:
     Predictor predictor;
 
     // shared control
-    vector<vector<float>> probability = vector<vector<float>>(3, vector<float>(3, 0.0));
+    vector<vector<float>> probability = vector<vector<float>>(4, vector<float>(4, 0.0));
     vector<float> auto_delta_position = vector<float>(3, 0.0f);
 
 private:
@@ -163,6 +165,8 @@ private:
     // poses & buttons subscriber
     ros::Subscriber sub_sigma_left;
     ros::Subscriber sub_sigma_right;
+    ros::Subscriber sub_sigma_vel_left;
+    ros::Subscriber sub_sigma_vel_right;
     ros::Subscriber sub_sigma_button_left;
     ros::Subscriber sub_sigma_button_right;
     ros::Subscriber sub_current_pose_left;
@@ -177,6 +181,8 @@ private:
     geometry_msgs::PoseStamped last_sigma_right;
     geometry_msgs::PoseStamped current_pose_left;
     geometry_msgs::PoseStamped current_pose_right;
+    geometry_msgs::TwistStamped current_twist_left;
+    geometry_msgs::TwistStamped current_twist_right;
 
     // 0,1,2 for left ur; 3,4,5 for right ur
     vector<double> delta_position = vector<double>(6, 0.0);
@@ -227,7 +233,7 @@ private:
     vector<float> angle_left = vector<float>(3, 0.0);
     vector<float> angle_right = vector<float>(3, 0.0);
 
-    Eigen::Matrix3d T = Eigen::Matrix3d::Identity();
+    Eigen::Matrix4d T_Markov = Eigen::Matrix4d::Identity();
 
     std::ofstream outFile;
     std::ofstream outVel;
