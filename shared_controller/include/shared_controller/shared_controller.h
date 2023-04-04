@@ -34,6 +34,7 @@ struct dynamic_reconfigure_params
     float eta_p = 0.0;
     float eta_v = 0.0;
     float kd = 0.0;
+    float auto_delta = 0.0;
 
     bool apf = false;
     bool blend = false;

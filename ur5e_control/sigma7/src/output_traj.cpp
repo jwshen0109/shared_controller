@@ -61,11 +61,7 @@ void leftslaveCallback(const geometry_msgs::PoseStampedConstPtr &pose)
     {
         output_ls << pose->pose.position.x << "\t";
         output_ls << pose->pose.position.y << "\t";
-        output_ls << pose->pose.position.z << "\t";
-        output_ls << pose->pose.orientation.x << "\t";
-        output_ls << pose->pose.orientation.y << "\t";
-        output_ls << pose->pose.orientation.z << "\t";
-        output_ls << pose->pose.orientation.w << std::endl;
+        output_ls << pose->pose.position.z << std::endl;
     }
 }
 
@@ -75,11 +71,7 @@ void rightslaveCallback(const geometry_msgs::PoseStampedConstPtr &pose)
     {
         output_rs << pose->pose.position.x << "\t";
         output_rs << pose->pose.position.y << "\t";
-        output_rs << pose->pose.position.z << "\t";
-        output_rs << pose->pose.orientation.x << "\t";
-        output_rs << pose->pose.orientation.y << "\t";
-        output_rs << pose->pose.orientation.z << "\t";
-        output_rs << pose->pose.orientation.w << std::endl;
+        output_rs << pose->pose.position.z << std::endl;
     }
 }
 

@@ -136,6 +136,7 @@ void TeleOperation::configCallback(shared_controller::commandConfig &config, uin
     drp.blend = config.blend;
     drp.scale = config.scale;
     drp.delta_step = config.delta_step;
+    drp.auto_delta = config.auto_delta;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -403,6 +404,16 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
             }
             else
             {
+                // ROS_INFO("delta_position[4]:%f", delta_position[4]);
+                // if (delta_position[4] > 0)
+                // {
+                //     target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4] - drp.auto_delta / 50;
+                // }
+                // else
+                // {
+                //     target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
+                // }
+
                 target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
                 target_pose_right.pose.position.y = last_pose_right.pose.position.y + drp.scale * delta_position[3];
                 target_pose_right.pose.position.z = last_pose_right.pose.position.z + drp.scale * delta_position[5];
@@ -459,11 +470,18 @@ void TeleOperation::callback_vel_right(const geometry_msgs::TwistStampedConstPtr
     velocity_right[0] = current_twist_right.twist.linear.x;
     velocity_right[1] = current_twist_right.twist.linear.y;
     velocity_right[2] = current_twist_right.twist.linear.z;
-    float total = sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2));
-    angle_right[0] = velocity_right[0] / total;
-    angle_right[1] = velocity_right[1] / total;
-    angle_right[2] = velocity_right[2] / total;
-    ROS_INFO("x:%f y:%f,z:%f", angle_right[0], angle_right[1], angle_right[2]);
+    if (button_right == 1)
+    {
+        outVel << velocity_right[0] << "\t" << velocity_right[1] << "\t" << velocity_right[2] << endl;
+        if (abs(velocity_right[0]) > EPSILON || abs(velocity_right[0]) > EPSILON || abs(velocity_right[0]) > EPSILON)
+        {
+            float total = sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2));
+            angle_right[0] = acos(velocity_right[0] / total) * 180 / PI;
+            angle_right[1] = acos(velocity_right[1] / total) * 180 / PI;
+            angle_right[2] = acos(velocity_right[2] / total) * 180 / PI;
+            // ROS_INFO("x:%f y:%f,z:%f", angle_right[0], angle_right[1], angle_right[2]);
+        }
+    }
 }
 
 vector<float> TeleOperation::forceToMotionControl(float retractor_nForce)
