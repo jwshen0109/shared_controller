@@ -24,6 +24,7 @@
 
 #define PI 3.141592653
 #define EPSILON 0.0001
+constexpr auto e = 2.71828;
 
 using namespace std;
 
@@ -112,6 +113,8 @@ public:
 
     void activeRetractionAPF(Point2D &retractor_cur);
 
+    float Fedge(vector<float> &retractor_cur, vector<float> &vel, int id);
+
     void updateProbability();
 
     vector<float> calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor);
@@ -124,8 +127,8 @@ public:
     // for APF
     APF apf;
     // forceVector forceVector;
-    Point2D *retractor_cur;
-    Point2D *p0;
+    // Point2D *retractor_cur;
+    // Point2D *p0;
     vector<float> xyForce = vector<float>(2, 0.0f);
 
     dynamic_reconfigure_params drp;
@@ -186,7 +189,7 @@ private:
     geometry_msgs::TwistStamped current_twist_right;
 
     // 0,1,2 for left ur; 3,4,5 for right ur
-    vector<double> delta_position = vector<double>(6, 0.0);
+    vector<float> delta_position = vector<float>(6, 0.0);
 
     // left ur quaternions
     Eigen::Quaterniond delta_q_left;
@@ -235,6 +238,25 @@ private:
     vector<float> angle_right = vector<float>(3, 0.0);
 
     Eigen::Matrix4d T_Markov = Eigen::Matrix4d::Identity();
+
+    // APF param
+    float eta_att = 0.3;
+    float eta_rep = 0.02;
+    float delta_t = 0.005;
+
+    // retractor size
+    float retractor_width = 0.015;
+    float retractor_height = 0.035;
+    // edge size
+    float edge_width = 0.035;
+    float edge_height = 0.055;
+
+    int apf_flag = 0;
+    float step = 0.002;
+    vector<float> p0 = vector<float>(3, 0.0);
+    vector<float> delta_last = vector<float>(3, 0.0);
+    vector<float> retractor_cur = vector<float>(3, 0.0);
+    vector<float> vel = vector<float>(3, 0.0);
 
     std::ofstream outFile;
     std::ofstream outVel;

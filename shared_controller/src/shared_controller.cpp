@@ -402,21 +402,42 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
                 target_pose_right.pose.orientation.z = ur_q_target_right.z();
                 target_pose_right.pose.orientation.w = ur_q_target_right.w();
             }
+            else if (drp.apf)
+            {
+                if (apf_flag == 0)
+                {
+                    p0[0] = delta_position[4];
+                    p0[1] = delta_position[3];
+                    p0[2] = delta_position[5];
+                    apf_flag = 1;
+                }
+                vel[0] = (delta_position[4] - delta_last[0]) / step;
+                vel[1] = (delta_position[3] - delta_last[1]) / step;
+                vel[2] = (delta_position[5] - delta_last[2]) / step;
+                retractor_cur[0] = delta_position[4] - p0[0];
+                retractor_cur[1] = delta_position[3] - p0[1];
+                retractor_cur[2] = delta_position[5] - p0[2];
+                float force_y = Fedge(retractor_cur, vel, 0);
+                float force_z = Fedge(retractor_cur, vel, 1);
+                ROS_INFO("y:%f, z:%f", force_y, force_z);
+                target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
+                target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
+                target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
+
+                target_pose_right.pose.orientation.x = ur_q_target_right.x();
+                target_pose_right.pose.orientation.y = ur_q_target_right.y();
+                target_pose_right.pose.orientation.z = ur_q_target_right.z();
+                target_pose_right.pose.orientation.w = ur_q_target_right.w();
+
+                delta_last[0] = delta_position[4];
+                delta_last[1] = delta_position[3];
+                delta_last[2] = delta_position[5];
+            }
             else
             {
-                // ROS_INFO("delta_position[4]:%f", delta_position[4]);
-                // if (delta_position[4] > 0)
-                // {
-                //     target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4] - drp.auto_delta / 50;
-                // }
-                // else
-                // {
-                //     target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-                // }
-
                 target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-                target_pose_right.pose.position.y = last_pose_right.pose.position.y + drp.scale * delta_position[3];
-                target_pose_right.pose.position.z = last_pose_right.pose.position.z + drp.scale * delta_position[5];
+                target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
+                target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
 
                 target_pose_right.pose.orientation.x = ur_q_target_right.x();
                 target_pose_right.pose.orientation.y = ur_q_target_right.y();
@@ -482,6 +503,42 @@ void TeleOperation::callback_vel_right(const geometry_msgs::TwistStampedConstPtr
             // ROS_INFO("x:%f y:%f,z:%f", angle_right[0], angle_right[1], angle_right[2]);
         }
     }
+}
+
+float TeleOperation::Fedge(vector<float> &retractor_cur, vector<float> &vel, int id)
+{
+    float Fedge = 0.0;
+    float d = 0.0;
+    float v = 0.0;
+    // y
+    if (id == 0)
+    {
+        d = retractor_cur[1];
+        v = vel[1];
+    }
+    else
+    {
+        d = retractor_cur[2];
+        v = vel[2];
+    }
+    if (-(edge_width - retractor_width / 2) <= d && d < 0.0)
+    {
+        Fedge = eta_rep * pow(d, 2) / 3;
+    }
+    else if (d >= 0.0 && d <= (edge_width - retractor_width / 2))
+    {
+        Fedge = eta_rep * pow(d, 2) / 3;
+    }
+    else if (-edge_width < d && d < -(edge_width - retractor_width / 2))
+    {
+        Fedge = eta_rep * v * pow(e, -d);
+    }
+    else if ((edge_width - retractor_width / 2) < d && d < edge_width)
+    {
+        Fedge = eta_rep * v * pow(e, d);
+    }
+
+    return Fedge;
 }
 
 vector<float> TeleOperation::forceToMotionControl(float retractor_nForce)
