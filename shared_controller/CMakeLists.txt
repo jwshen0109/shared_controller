@@ -100,6 +100,7 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 generate_dynamic_reconfigure_options(
   cfg/command.cfg
+  cfg/traj.cfg
 )
 
 
@@ -153,6 +154,13 @@ target_link_libraries(test_vel ${catkin_LIBRARIES})
 add_executable(shared_control src/shared_controller.cpp src/artificial_potential_field.cpp src/task_predictor.cpp)
 target_link_libraries(shared_control ${catkin_LIBRARIES})
 add_dependencies(shared_control ${PROJECT_NAME}_gencfg)
+
+add_executable(force_control_c4 src/force_control.cpp)
+target_link_libraries(force_control_c4 ${catkin_LIBRARIES})
+add_dependencies(force_control_c4 ${PROJECT_NAME}_gencfg)
+
+add_executable(out_traj src/out_traj.cpp )
+target_link_libraries(out_traj ${catkin_LIBRARIES})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

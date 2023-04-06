@@ -136,9 +136,9 @@ public:
     dynamic_reconfigure_params drp;
 
     // Cylinder *target_cylinder;
-    VirtualFixture vf;
-    SharedController sc;
-    Predictor predictor;
+    // VirtualFixture vf;
+    // SharedController sc;
+    // Predictor predictor;
 
     // shared control
     vector<vector<float>> probability = vector<vector<float>>(4, vector<float>(4, 0.0));
@@ -166,6 +166,7 @@ private:
     ros::Publisher path_pub_right;
     ros::Publisher netforce_pub;
     ros::Publisher vfForce_pub;
+    ros::Publisher dynamicParam_pub;
 
     ros::ServiceClient head_client;
 

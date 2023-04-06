@@ -85,6 +85,7 @@ TeleOperation::TeleOperation()
     target_pub_right = nh.advertise<geometry_msgs::PoseStamped>("/right/cartesian_motion_controller/target_frame", 1);
     netforce_pub = nh.advertise<std_msgs::Float64MultiArray>("/touch_netforce", 1);
     vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/sigma0/force_feedback", 1);
+    dynamicParam_pub = nh.advertise<std_msgs::Float64MultiArray>("/dynamic_param", 1);
     // path_pub_left = nh.advertise<nav_msgs::Path>("/left/path", 1);
     // path_pub_right = nh.advertise<nav_msgs::Path>("/right/path", 1);
     // subscribe from sigma7 devices
@@ -113,8 +114,6 @@ TeleOperation::TeleOperation()
     outVel.open("/home/ur5e/Code/shared_control/data/apf/vel.txt");
     outP_foce.open("/home/ur5e/Code/shared_control/data/apf/pforce.txt");
     outFile.open("/home/ur5e/Code/shared_control/data/apf/prob.txt");
-    output_rm.open("/home/ur5e/Code/shared_control/data/apf/rm.txt");
-    output_rs.open("/home/ur5e/Code/shared_control/data/apf/rs.txt");
     // APF init
     // target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     // p_current = new Point2D(0, 0, 0);
@@ -158,12 +157,6 @@ void TeleOperation::current_pose_callback_right(const geometry_msgs::PoseStamped
     if (first_flag_right == 0)
     {
         first_flag_right = 2;
-    }
-    if (button_right == 1 && drp.apf)
-    {
-        output_rs << msgs->pose.position.x << "\t";
-        output_rs << msgs->pose.position.y << "\t";
-        output_rs << msgs->pose.position.z << std::endl;
     }
     // vector<float> euler = QuaternionToEulerAngle(current_pose_right);
     // ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
@@ -497,22 +490,6 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // vf.eta_v = sc.drp.eta_v;
     // target_cylinder->R = sc.drp.radius;
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
-
-    if (button_right == 1 && drp.apf)
-    {
-        float x = (last_msgs_right->pose.position.x - last_rightmaster[0]) + 0.45;
-        float y = (last_msgs_right->pose.position.y - last_rightmaster[1]);
-        float z = (last_msgs_right->pose.position.z - last_rightmaster[2]) + 0.4;
-        output_rm << -(y - 0.45) << "\t";
-        output_rm << x - 0.45 << "\t";
-        output_rm << z << endl;
-    }
-    else
-    {
-        last_rightmaster[0] = last_msgs_right->pose.position.x;
-        last_rightmaster[1] = last_msgs_right->pose.position.y;
-        last_rightmaster[2] = last_msgs_right->pose.position.z;
-    }
 }
 
 void TeleOperation::callback_vel_left(const geometry_msgs::TwistStampedConstPtr &last_vel)
