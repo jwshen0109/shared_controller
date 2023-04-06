@@ -84,6 +84,7 @@ TeleOperation::TeleOperation()
     target_pub_left = nh.advertise<geometry_msgs::PoseStamped>("/left/cartesian_motion_controller/target_frame", 1);
     target_pub_right = nh.advertise<geometry_msgs::PoseStamped>("/right/cartesian_motion_controller/target_frame", 1);
     netforce_pub = nh.advertise<std_msgs::Float64MultiArray>("/touch_netforce", 1);
+    vfForce_pub = nh.advertise<geometry_msgs::WrenchStamped>("/sigma0/force_feedback", 1);
     // path_pub_left = nh.advertise<nav_msgs::Path>("/left/path", 1);
     // path_pub_right = nh.advertise<nav_msgs::Path>("/right/path", 1);
     // subscribe from sigma7 devices
@@ -109,10 +110,11 @@ TeleOperation::TeleOperation()
     f = boost::bind(&TeleOperation::configCallback, this, _1, _2);
     server.setCallback(f);
 
-    outVel.open("/home/ur5e/Code/shared_control/data/vel.txt");
-    outAngle.open("/home/ur5e/Code/shared_control/data/angle.txt");
-    outFile.open("/home/ur5e/Code/shared_control/data/prob.txt");
-
+    outVel.open("/home/ur5e/Code/shared_control/data/apf/vel.txt");
+    outP_foce.open("/home/ur5e/Code/shared_control/data/apf/pforce.txt");
+    outFile.open("/home/ur5e/Code/shared_control/data/apf/prob.txt");
+    output_rm.open("/home/ur5e/Code/shared_control/data/apf/rm.txt");
+    output_rs.open("/home/ur5e/Code/shared_control/data/apf/rs.txt");
     // APF init
     // target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     // p_current = new Point2D(0, 0, 0);
@@ -132,11 +134,13 @@ TeleOperation::TeleOperation()
 void TeleOperation::configCallback(shared_controller::commandConfig &config, uint32_t level)
 {
     drp.apf = config.apf;
+    drp.kp = config.kp;
     drp.kd = config.kd;
     drp.blend = config.blend;
     drp.scale = config.scale;
     drp.delta_step = config.delta_step;
     drp.auto_delta = config.auto_delta;
+    drp.force_k = config.force_k;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -154,6 +158,12 @@ void TeleOperation::current_pose_callback_right(const geometry_msgs::PoseStamped
     if (first_flag_right == 0)
     {
         first_flag_right = 2;
+    }
+    if (button_right == 1 && drp.apf)
+    {
+        output_rs << msgs->pose.position.x << "\t";
+        output_rs << msgs->pose.position.y << "\t";
+        output_rs << msgs->pose.position.z << std::endl;
     }
     // vector<float> euler = QuaternionToEulerAngle(current_pose_right);
     // ROS_INFO("x: %f, y: %f, z: %f", euler[0], euler[1], euler[2]);
@@ -404,25 +414,35 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
             }
             else if (drp.apf)
             {
-                if (apf_flag == 0)
-                {
-                    p0[0] = delta_position[4];
-                    p0[1] = delta_position[3];
-                    p0[2] = delta_position[5];
-                    apf_flag = 1;
-                }
-                vel[0] = (delta_position[4] - delta_last[0]) / step;
-                vel[1] = (delta_position[3] - delta_last[1]) / step;
-                vel[2] = (delta_position[5] - delta_last[2]) / step;
-                retractor_cur[0] = delta_position[4] - p0[0];
-                retractor_cur[1] = delta_position[3] - p0[1];
-                retractor_cur[2] = delta_position[5] - p0[2];
-                float force_y = Fedge(retractor_cur, vel, 0);
-                float force_z = Fedge(retractor_cur, vel, 1);
-                ROS_INFO("y:%f, z:%f", force_y, force_z);
+
                 target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
                 target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
                 target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
+
+                if (apf_flag == 0)
+                {
+                    p0[0] = target_pose_right.pose.position.x;
+                    p0[1] = target_pose_right.pose.position.y;
+                    p0[2] = target_pose_right.pose.position.z;
+                    apf_flag = 1;
+                }
+                vel[0] = delta_position[4] / step * 1000;
+                vel[1] = delta_position[3] / step * 1000;
+                vel[2] = delta_position[5] / step * 1000;
+
+                retractor_cur[0] = (target_pose_right.pose.position.x - p0[0]) * 1000;
+                retractor_cur[1] = (target_pose_right.pose.position.y - p0[1]) * 1000;
+                retractor_cur[2] = (target_pose_right.pose.position.z - p0[2]) * 1000;
+                float force_y = Fedge(retractor_cur, vel, 0);
+                float force_z = Fedge(retractor_cur, vel, 1);
+                outVel << vel[0] << "\t" << vel[1] << "\t" << vel[2] << endl;
+                outP_foce << retractor_cur[0] << "\t" << retractor_cur[1] << "\t" << retractor_cur[2] << "\t" << force_y << "\t" << force_z << "\t" << endl;
+                // ROS_INFO("retractor_cur1:%f, retractor_cur2:%f, vel1:%f, vel:%f", retractor_cur[1], retractor_cur[2], vel[1], vel[2]);
+                // ROS_INFO("y:%f, z:%f", p0[1], p0[2]);
+
+                vector<float> compensation = forceToMotionControl(force_z);
+                forceFeedback(force_z);
+                target_pose_right.pose.position.z -= compensation[0];
 
                 target_pose_right.pose.orientation.x = ur_q_target_right.x();
                 target_pose_right.pose.orientation.y = ur_q_target_right.y();
@@ -477,6 +497,22 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // vf.eta_v = sc.drp.eta_v;
     // target_cylinder->R = sc.drp.radius;
     // vf.PublishVirtualForce(*p_current, *target_cylinder, cur_vel);
+
+    if (button_right == 1 && drp.apf)
+    {
+        float x = (last_msgs_right->pose.position.x - last_rightmaster[0]) + 0.45;
+        float y = (last_msgs_right->pose.position.y - last_rightmaster[1]);
+        float z = (last_msgs_right->pose.position.z - last_rightmaster[2]) + 0.4;
+        output_rm << -(y - 0.45) << "\t";
+        output_rm << x - 0.45 << "\t";
+        output_rm << z << endl;
+    }
+    else
+    {
+        last_rightmaster[0] = last_msgs_right->pose.position.x;
+        last_rightmaster[1] = last_msgs_right->pose.position.y;
+        last_rightmaster[2] = last_msgs_right->pose.position.z;
+    }
 }
 
 void TeleOperation::callback_vel_left(const geometry_msgs::TwistStampedConstPtr &last_vel)
@@ -493,7 +529,7 @@ void TeleOperation::callback_vel_right(const geometry_msgs::TwistStampedConstPtr
     velocity_right[2] = current_twist_right.twist.linear.z;
     if (button_right == 1)
     {
-        outVel << velocity_right[0] << "\t" << velocity_right[1] << "\t" << velocity_right[2] << endl;
+
         if (abs(velocity_right[0]) > EPSILON || abs(velocity_right[0]) > EPSILON || abs(velocity_right[0]) > EPSILON)
         {
             float total = sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2));
@@ -527,15 +563,17 @@ float TeleOperation::Fedge(vector<float> &retractor_cur, vector<float> &vel, int
     }
     else if (d >= 0.0 && d <= (edge_width - retractor_width / 2))
     {
-        Fedge = eta_rep * pow(d, 2) / 3;
+        Fedge = -eta_rep * pow(d, 2) / 3;
     }
     else if (-edge_width < d && d < -(edge_width - retractor_width / 2))
     {
         Fedge = eta_rep * v * pow(e, -d);
+        Fedge = 0;
     }
     else if ((edge_width - retractor_width / 2) < d && d < edge_width)
     {
         Fedge = eta_rep * v * pow(e, d);
+        Fedge = 0;
     }
 
     return Fedge;
@@ -543,22 +581,31 @@ float TeleOperation::Fedge(vector<float> &retractor_cur, vector<float> &vel, int
 
 vector<float> TeleOperation::forceToMotionControl(float retractor_nForce)
 {
-    float dis = drp.kd * (1.0 - retractor_nForce) * drp.delta_step;
+    float dis = drp.kp * (retractor_nForce - 0.0) * drp.delta_step + drp.kd * (retractor_nForce - last_retractor_force) * step;
 
     vector<float> delta_position_tmp(3, 0.0);
     // delta_position_tmp[0] = dis * sin(30 * PI / 180);
     // delta_position_tmp[2] = -dis * cos(30 * PI / 180);
     // ROS_INFO("dis: %f, x: %f, y: %f, z: %f", dis, delta_position_tmp[0], delta_position_tmp[1], delta_position_tmp[2]);
     delta_position_tmp[0] = -dis;
+    last_retractor_force = retractor_nForce;
     return delta_position_tmp;
 }
 
-void TeleOperation::activeRetractionAPF(Point2D &retractor_cur)
+void TeleOperation::forceFeedback(float fz)
 {
-    forceVector xFedge = apf.xFedge(retractor_cur, velocity_right[0]);
-    forceVector yFedge = apf.yFedge(retractor_cur, velocity_right[1]);
-    xyForce[0] = xFedge.length;
-    xyForce[1] = yFedge.length;
+    geometry_msgs::WrenchStamped virtual_force;
+
+    virtual_force.header.frame_id = "base_link";
+    virtual_force.header.stamp = ros::Time::now();
+
+    virtual_force.wrench.force.x = 0.0;
+    virtual_force.wrench.force.y = 0.0;
+    virtual_force.wrench.force.z = fz * drp.force_k;
+    virtual_force.wrench.torque.x = 0.0;
+    virtual_force.wrench.torque.y = 0.0;
+    virtual_force.wrench.torque.z = 0.0;
+    vfForce_pub.publish(virtual_force);
 }
 
 vector<float> TeleOperation::calculateRetractorDis(vector<float> &leftRetractor, vector<float> &rightRetractor)

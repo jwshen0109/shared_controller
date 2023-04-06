@@ -34,8 +34,10 @@ struct dynamic_reconfigure_params
     double scale = 0.1;
     float eta_p = 0.0;
     float eta_v = 0.0;
+    float kp = 0.0;
     float kd = 0.0;
     float auto_delta = 0.0;
+    float force_k = 1.0;
 
     bool apf = false;
     bool blend = false;
@@ -111,7 +113,7 @@ public:
 
     vector<float> forceToMotionControl(float retractor_nForce);
 
-    void activeRetractionAPF(Point2D &retractor_cur);
+    void forceFeedback(float fz);
 
     float Fedge(vector<float> &retractor_cur, vector<float> &vel, int id);
 
@@ -163,6 +165,7 @@ private:
     ros::Publisher path_pub_left;
     ros::Publisher path_pub_right;
     ros::Publisher netforce_pub;
+    ros::Publisher vfForce_pub;
 
     ros::ServiceClient head_client;
 
@@ -245,11 +248,12 @@ private:
     float delta_t = 0.005;
 
     // retractor size
-    float retractor_width = 0.015;
-    float retractor_height = 0.035;
+    float retractor_width = 15;
+    float retractor_height = 35;
     // edge size
-    float edge_width = 0.035;
-    float edge_height = 0.055;
+    float edge_width = 35;
+    float edge_height = 55;
+    float last_retractor_force = 0.0;
 
     int apf_flag = 0;
     float step = 0.002;
@@ -257,10 +261,14 @@ private:
     vector<float> delta_last = vector<float>(3, 0.0);
     vector<float> retractor_cur = vector<float>(3, 0.0);
     vector<float> vel = vector<float>(3, 0.0);
+    vector<float> last_rightmaster = vector<float>(3, 0.0);
 
     std::ofstream outFile;
     std::ofstream outVel;
-    std::ofstream outAngle;
+    std::ofstream outP_foce;
+    std::ofstream outforce;
+    std::ofstream output_rm;
+    std::ofstream output_rs;
 };
 
 class TouchTeleOperation
