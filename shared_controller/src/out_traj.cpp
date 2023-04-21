@@ -3,12 +3,13 @@
 #include <sensor_msgs/Joy.h>
 #include <vector>
 #include "shared_controller/shared_controller.h"
+#include <std_msgs/Float64MultiArray.h>
 
 #include <fstream>
 
 using namespace std;
 
-dynamic_reconfigure_params drp;
+// dynamic_reconfigure_params drp;
 
 ofstream output_lm;
 ofstream output_rm;
@@ -19,6 +20,15 @@ int button_left = 0;
 int button_right = 0;
 vector<float> last_leftmaster = vector<float>(3, 0.0f);
 vector<float> last_rightmaster = vector<float>(3, 0.0f);
+int drp_apf = 0;
+
+void paramCallback(const std_msgs::Float64MultiArrayConstPtr &msg)
+{
+    if (msg->data[0] == 1)
+    {
+        drp_apf = 1;
+    }
+}
 
 void leftmasterCallback(const geometry_msgs::PoseStampedConstPtr &pose)
 {
@@ -41,7 +51,7 @@ void leftmasterCallback(const geometry_msgs::PoseStampedConstPtr &pose)
 
 void rightmasterCallback(const geometry_msgs::PoseStampedConstPtr &pose)
 {
-    if (button_right == 1 && drp.apf)
+    if (button_right == 1 && drp_apf)
     {
         float x = (pose->pose.position.x - last_rightmaster[0]) + 0.45;
         float y = (pose->pose.position.y - last_rightmaster[1]);
@@ -70,7 +80,7 @@ void leftslaveCallback(const geometry_msgs::PoseStampedConstPtr &pose)
 
 void rightslaveCallback(const geometry_msgs::PoseStampedConstPtr &pose)
 {
-    if (button_right == 1 && drp.apf)
+    if (button_right == 1 && drp_apf)
     {
         output_rs << pose->pose.position.x << "\t";
         output_rs << pose->pose.position.y << "\t";
@@ -99,6 +109,7 @@ int main(int argc, char **argv)
     ros::Subscriber rm_pose_sub = nh.subscribe("/sigma7/sigma0/pose", 1, &rightmasterCallback);
     ros::Subscriber sub_sigma_button_left = nh.subscribe("/sigma7/sigma1/buttons", 1, &callback_button_left);
     ros::Subscriber sub_sigma_button_right = nh.subscribe("/sigma7/sigma0/buttons", 1, &callback_button_right);
+    ros::Subscriber dynamic_param = nh.subscribe("/dynamic_param", 1, &paramCallback);
 
     // output_lm.open("/home/ur5e/Code/force_control/data/lm.txt");
     output_rm.open("/home/ur5e/Code/shared_control/data/apf/rm.txt");

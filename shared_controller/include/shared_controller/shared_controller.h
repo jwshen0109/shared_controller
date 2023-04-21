@@ -23,7 +23,7 @@
 #include "shared_controller/artificial_potential_field.h"
 
 #define PI 3.141592653
-#define EPSILON 0.0001
+#define EPSILON 0.00005
 constexpr auto e = 2.71828;
 
 using namespace std;
@@ -270,6 +270,8 @@ private:
     std::ofstream outforce;
     std::ofstream output_rm;
     std::ofstream output_rs;
+    std::ofstream output_angle;
+    std::ofstream output_re_vel;
 };
 
 class TouchTeleOperation

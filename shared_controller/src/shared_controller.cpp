@@ -114,6 +114,8 @@ TeleOperation::TeleOperation()
     outVel.open("/home/ur5e/Code/shared_control/data/apf/vel.txt");
     outP_foce.open("/home/ur5e/Code/shared_control/data/apf/pforce.txt");
     outFile.open("/home/ur5e/Code/shared_control/data/apf/prob.txt");
+    output_re_vel.open("/home/ur5e/Code/shared_control/data/vel.txt");
+    output_angle.open("/home/ur5e/Code/shared_control/data/angle.txt");
     // APF init
     // target_cylinder = new Cylinder(0.6, 0.0, 0.15);
     // p_current = new Point2D(0, 0, 0);
@@ -407,7 +409,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
             }
             else if (drp.apf)
             {
-
+                std_msgs::Float64MultiArray dynamic_param;
                 target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
                 target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
                 target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
@@ -435,6 +437,8 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
                 vector<float> compensation = forceToMotionControl(force_z);
                 forceFeedback(force_z);
+                dynamic_param.data.push_back(1);
+                dynamicParam_pub.publish(dynamic_param);
                 target_pose_right.pose.position.z -= compensation[0];
 
                 target_pose_right.pose.orientation.x = ur_q_target_right.x();
@@ -513,7 +517,8 @@ void TeleOperation::callback_vel_right(const geometry_msgs::TwistStampedConstPtr
             angle_right[0] = acos(velocity_right[0] / total) * 180 / PI;
             angle_right[1] = acos(velocity_right[1] / total) * 180 / PI;
             angle_right[2] = acos(velocity_right[2] / total) * 180 / PI;
-            // ROS_INFO("x:%f y:%f,z:%f", angle_right[0], angle_right[1], angle_right[2]);
+            ROS_INFO("x:%f y:%f,z:%f", angle_right[0], angle_right[1], angle_right[2]);
+            // output_angle << angle_right[0] << "\t" << angle_right[1] << "\t" << angle_right[2] << endl;
         }
     }
 }
@@ -627,32 +632,33 @@ void TeleOperation::current_velocity_callback_left(const geometry_msgs::TwistSta
 
 void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistStampedConstPtr &last_velocity)
 {
-    // velocity_right[0] = last_velocity->twist.linear.x;
-    // velocity_right[1] = last_velocity->twist.linear.y;
-    // velocity_right[2] = last_velocity->twist.linear.z;
-    // if (abs(last_velocity->twist.linear.x) > EPSILON && abs(last_velocity->twist.linear.y) > EPSILON && abs(last_velocity->twist.linear.z) > EPSILON)
-    // {
-    //     velocity_right[0] = last_velocity->twist.linear.x * cos(120 * PI / 180);
-    //     +last_velocity->twist.linear.z *cos(210 * PI / 180);
-    //     velocity_right[1] = last_velocity->twist.linear.y;
-    //     velocity_right[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
+    velocity_right[0] = last_velocity->twist.linear.x;
+    velocity_right[1] = last_velocity->twist.linear.y;
+    velocity_right[2] = last_velocity->twist.linear.z;
+    if (abs(last_velocity->twist.linear.x) > EPSILON && abs(last_velocity->twist.linear.y) > EPSILON && abs(last_velocity->twist.linear.z) > EPSILON)
+    {
+        velocity_right[0] = last_velocity->twist.linear.x * cos(120 * PI / 180);
+        +last_velocity->twist.linear.z *cos(210 * PI / 180);
+        velocity_right[1] = last_velocity->twist.linear.y;
+        velocity_right[2] = last_velocity->twist.linear.x * cos(30 * PI / 180) + last_velocity->twist.linear.z * cos(120 * PI / 180);
 
-    //     float rx_cos = velocity_right[0] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
-    //     float ry_cos = velocity_right[1] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
-    //     float rz_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
-    //     angle_right[0] = acos(rx_cos) * 180 / PI;
-    //     angle_right[1] = acos(ry_cos) * 180 / PI;
-    //     angle_right[2] = acos(rz_cos) * 180 / PI;
-    //     outVel << velocity_right[0] << "\t" << velocity_right[1] << "\t" << velocity_right[2] << std::endl;
-    //     outAngle << angle_right[0] << "\t";
-    //     outAngle << angle_right[1] << "\t";
-    //     outAngle << angle_right[2] << std::endl;
-    //     if (angle_right[2] > 90)
-    //     {
-    //         angle_right[2] = 90;
-    //     }
-    //     updateProbability();
-    // }
+        float rx_cos = velocity_right[0] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        float ry_cos = velocity_right[1] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        float rz_cos = velocity_right[2] / (sqrt(pow(velocity_right[0], 2) + pow(velocity_right[1], 2) + pow(velocity_right[2], 2)));
+        angle_right[0] = acos(rx_cos) * 180 / PI;
+        angle_right[1] = acos(ry_cos) * 180 / PI;
+        angle_right[2] = acos(rz_cos) * 180 / PI;
+        output_re_vel << velocity_right[0] << "\t" << velocity_right[1] << "\t" << velocity_right[2] << std::endl;
+        output_angle << angle_right[0] << "\t";
+        output_angle << angle_right[1] << "\t";
+        output_angle << angle_right[2] << std::endl;
+        //     if (angle_right[2] > 90)
+        //     {
+        //         angle_right[2] = 90;
+        //     }
+        //     updateProbability();
+        // }
+    }
 }
 
 void TeleOperation::updateProbability()
