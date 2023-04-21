@@ -307,9 +307,15 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 {
     vector<float> cur_vel(3, 0.0);
 
+    // q_transform_right.x() = 0.0;
+    // q_transform_right.y() = 0.0;
+    // q_transform_right.z() = 0.7071068;
+    // q_transform_right.w() = 0.7071068;
+
+    // for coordinate test
     q_transform_right.x() = 0.0;
     q_transform_right.y() = 0.0;
-    q_transform_right.z() = 0.7071068;
+    q_transform_right.z() = -0.7071068;
     q_transform_right.w() = 0.7071068;
 
     // current sigma orientation
@@ -366,11 +372,16 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
         target_pose_right.pose.position.x = 0.45;
         target_pose_right.pose.position.y = 0.0;
         target_pose_right.pose.position.z = 0.4;
-        target_pose_right.pose.orientation.x = 0.0;
-        target_pose_right.pose.orientation.y = 1.0;
-        target_pose_right.pose.orientation.z = 0.0;
-        target_pose_right.pose.orientation.w = 0.0;
+        // target_pose_right.pose.orientation.x = 0.0;
+        // target_pose_right.pose.orientation.y = 1.0;
+        // target_pose_right.pose.orientation.z = 0.0;
+        // target_pose_right.pose.orientation.w = 0.0;
 
+        // for coordinate test
+        target_pose_right.pose.orientation.x = 0.0;
+        target_pose_right.pose.orientation.y = -0.258819;
+        target_pose_right.pose.orientation.z = 0.0;
+        target_pose_right.pose.orientation.w = 0.9659258;
         target_pub_right.publish(target_pose_right);
 
         // calculate APF
