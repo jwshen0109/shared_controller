@@ -142,6 +142,7 @@ void TeleOperation::configCallback(shared_controller::commandConfig &config, uin
     drp.delta_step = config.delta_step;
     drp.auto_delta = config.auto_delta;
     drp.force_k = config.force_k;
+    drp.angle = config.angle;
 }
 
 void TeleOperation::current_pose_callback_left(const geometry_msgs::PoseStampedConstPtr &msgs)
@@ -452,8 +453,11 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
             }
             else
             {
-                target_pose_right.pose.position.x = last_pose_right.pose.position.x - delta_position[4];
-                target_pose_right.pose.position.y = last_pose_right.pose.position.y + delta_position[3];
+                float tmp_x = delta_position[3] * sin(drp.angle * PI / 180) + delta_position[4] * cos(drp.angle * PI / 180);
+                float tmp_y = delta_position[3] * cos(drp.angle * PI / 180) - delta_position[4] * sin(drp.angle * PI / 180);
+
+                target_pose_right.pose.position.x = last_pose_right.pose.position.x - tmp_x;
+                target_pose_right.pose.position.y = last_pose_right.pose.position.y + tmp_y;
                 target_pose_right.pose.position.z = last_pose_right.pose.position.z + delta_position[5];
 
                 target_pose_right.pose.orientation.x = ur_q_target_right.x();

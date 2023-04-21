@@ -38,6 +38,7 @@ struct dynamic_reconfigure_params
     float kd = 0.0;
     float auto_delta = 0.0;
     float force_k = 1.0;
+    float angle = 15.0;
 
     bool apf = false;
     bool blend = false;
