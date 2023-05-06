@@ -24,6 +24,8 @@ ofstream output_joint;
 
 vector<float> net_force(2, 0.0);
 vector<float> singlePointForce(8, 0.0);
+vector<float> net_newforce(2, 0.0);
+vector<float> net_newTorque(2, 0.0);
 
 int flag_left = 0;
 int flag_right = 0;
@@ -48,6 +50,21 @@ void calculateTorque(vector<double> &torque)
     }
 }
 
+void newRetractorCallback(const std_msgs::Float64MultiArrayConstPtr &last_msgs)
+{
+    float p1 = last_msgs->data[0];
+    float p2 = last_msgs->data[1];
+    float p3 = last_msgs->data[2];
+    float p4 = last_msgs->data[3];
+    float net = p1 + p2 + p3 + p4;
+    net_newforce[0] = net;
+
+    // Mz
+    net_newTorque[0] = (p1 + p3 - p2 - p4) * 7;
+    // My
+    net_newTorque[1] = (p3 + p4 - p1 - p2) * 10.5;
+}
+
 void ftSensorForcePub()
 {
     double threshold = 1.0;
@@ -64,12 +81,12 @@ void ftSensorForcePub()
 
     right_sensor_force.header.stamp = ros::Time::now();
     right_sensor_force.header.frame_id = "retractor";
-    right_sensor_force.wrench.force.x = net_force[1];
+    right_sensor_force.wrench.force.x = net_newforce[0];
     right_sensor_force.wrench.force.y = 0.0;
     right_sensor_force.wrench.force.z = 0.0;
     right_sensor_force.wrench.torque.x = 0.0;
-    right_sensor_force.wrench.torque.y = 0.0;
-    right_sensor_force.wrench.torque.z = 0.0;
+    right_sensor_force.wrench.torque.y = -net_newTorque[1] * 3;
+    right_sensor_force.wrench.torque.z = net_newTorque[0];
 
     vector<double> torque(4, 0.0);
     calculateTorque(torque);
@@ -206,7 +223,7 @@ int main(int argc, char **argv)
     ros::Subscriber pose_sub = nh.subscribe("/right/cartesian_force_controller/current_pose", 1, &currentPoseCallback);
     ros::Subscriber velocity_sub = nh.subscribe("/right/cartesian_force_controller/current_velocity", 1, &currentVelocityCallback);
     ros::Subscriber joint_state_sub = nh.subscribe("/right/joint_states", 1, &jointCallback);
-
+    ros::Subscriber newretractor_force_sub = nh.subscribe("/new_retractor", 1, newRetractorCallback);
     // publish reference force to special topic
     ros::Publisher ref_force_pub_left = nh.advertise<geometry_msgs::WrenchStamped>("/left/cartesian_force_controller/target_wrench", 1);
     ros::Publisher ref_force_pub_right = nh.advertise<geometry_msgs::WrenchStamped>("/right/cartesian_force_controller/target_wrench", 1);

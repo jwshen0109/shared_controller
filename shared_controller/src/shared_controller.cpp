@@ -106,7 +106,8 @@ TeleOperation::TeleOperation()
     sub_current_velocity_right = nh.subscribe("/right/cartesian_motion_controller/current_velocity", 1, &TeleOperation::current_velocity_callback_right, this);
 
     single_point_force_sub = nh.subscribe("/touch_single_force", 1, &TeleOperation::singlePointForceCallback, this);
-
+    newretractor_force_sub = nh.subscribe("/new_retractor", 1, &TeleOperation::newRetractorCallback, this);
+    IOState_sub = nh.subscribe("/right/ur_hardware_interface/io_states", 1, &TeleOperation::IOStateCallback, this);
     // dynamic param config
     f = boost::bind(&TeleOperation::configCallback, this, _1, _2);
     server.setCallback(f);
@@ -139,6 +140,7 @@ void TeleOperation::configCallback(shared_controller::commandConfig &config, uin
     drp.kd = config.kd;
     drp.blend = config.blend;
     drp.scale = config.scale;
+    drp.scale1 = config.scale1;
     drp.delta_step = config.delta_step;
     drp.auto_delta = config.auto_delta;
     drp.force_k = config.force_k;
@@ -177,6 +179,21 @@ void TeleOperation::singlePointForceCallback(const std_msgs::Float64MultiArrayCo
     netforce_msgs.data.push_back(retractor_nForce[0]);
     netforce_msgs.data.push_back(retractor_nForce[1]);
     netforce_pub.publish(netforce_msgs);
+}
+
+void TeleOperation::newRetractorCallback(const std_msgs::Float64MultiArrayConstPtr &last_msgs)
+{
+    float p1 = last_msgs->data[0];
+    float p2 = last_msgs->data[1];
+    float p3 = last_msgs->data[2];
+    float p4 = last_msgs->data[3];
+    float net = p1 + p2 + p3 + p4;
+    net_newforce[0] = net;
+
+    // Mz
+    net_newTorque[0] = (p1 + p3 - p2 - p4) * 7;
+    // My
+    net_newTorque[1] = (p3 + p4 - p1 - p2) * 10.5;
 }
 
 vector<float> TeleOperation::netForceCalculation(vector<float> &singlePointForce)
@@ -307,16 +324,16 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 {
     vector<float> cur_vel(3, 0.0);
 
-    // q_transform_right.x() = 0.0;
-    // q_transform_right.y() = 0.0;
-    // q_transform_right.z() = 0.7071068;
-    // q_transform_right.w() = 0.7071068;
-
-    // for coordinate test
     q_transform_right.x() = 0.0;
     q_transform_right.y() = 0.0;
-    q_transform_right.z() = -0.7071068;
+    q_transform_right.z() = 0.7071068;
     q_transform_right.w() = 0.7071068;
+
+    // for coordinate test
+    // q_transform_right.x() = 0.0;
+    // q_transform_right.y() = 0.0;
+    // q_transform_right.z() = -0.7071068;
+    // q_transform_right.w() = 0.7071068;
 
     // current sigma orientation
     q_sigma_right.x() = last_msgs_right->pose.orientation.x;
@@ -338,7 +355,7 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
     // collision detection
     if (drp.blend)
     {
-        auto_delta_position = forceToMotionControl(retractor_nForce[1]);
+        auto_delta_position = forceToMotionControl(net_newforce[0] / drp.scale1);
         // ROS_INFO("x: %f y: %f z: %f", auto_delta_position[0], auto_delta_position[1], auto_delta_position[2]);
         rightRetractor_Coordians[0] = last_pose_right.pose.position.x + auto_delta_position[0];
         rightRetractor_Coordians[1] = last_pose_right.pose.position.y + auto_delta_position[1];
@@ -371,17 +388,17 @@ void TeleOperation::callback_right(const geometry_msgs::PoseStampedConstPtr &las
 
         target_pose_right.pose.position.x = 0.45;
         target_pose_right.pose.position.y = 0.0;
-        target_pose_right.pose.position.z = 0.4;
-        // target_pose_right.pose.orientation.x = 0.0;
-        // target_pose_right.pose.orientation.y = 1.0;
-        // target_pose_right.pose.orientation.z = 0.0;
-        // target_pose_right.pose.orientation.w = 0.0;
+        target_pose_right.pose.position.z = 0.3;
+        target_pose_right.pose.orientation.x = 0.0;
+        target_pose_right.pose.orientation.y = 1.0;
+        target_pose_right.pose.orientation.z = 0.0;
+        target_pose_right.pose.orientation.w = 0.0;
 
         // for coordinate test
-        target_pose_right.pose.orientation.x = 0.0;
-        target_pose_right.pose.orientation.y = -0.258819;
-        target_pose_right.pose.orientation.z = 0.0;
-        target_pose_right.pose.orientation.w = 0.9659258;
+        // target_pose_right.pose.orientation.x = 0.0;
+        // target_pose_right.pose.orientation.y = -0.258819;
+        // target_pose_right.pose.orientation.z = 0.0;
+        // target_pose_right.pose.orientation.w = 0.9659258;
         target_pub_right.publish(target_pose_right);
 
         // calculate APF
@@ -578,13 +595,13 @@ float TeleOperation::Fedge(vector<float> &retractor_cur, vector<float> &vel, int
 
 vector<float> TeleOperation::forceToMotionControl(float retractor_nForce)
 {
-    float dis = drp.kp * (retractor_nForce - 0.0) * drp.delta_step + drp.kd * (retractor_nForce - last_retractor_force) * step;
+    float dis = drp.kp * (retractor_nForce - 4.0) * drp.delta_step + drp.kd * (retractor_nForce - last_retractor_force) * step;
 
     vector<float> delta_position_tmp(3, 0.0);
     // delta_position_tmp[0] = dis * sin(30 * PI / 180);
     // delta_position_tmp[2] = -dis * cos(30 * PI / 180);
     // ROS_INFO("dis: %f, x: %f, y: %f, z: %f", dis, delta_position_tmp[0], delta_position_tmp[1], delta_position_tmp[2]);
-    delta_position_tmp[0] = -dis;
+    delta_position_tmp[0] = dis;
     last_retractor_force = retractor_nForce;
     return delta_position_tmp;
 }
@@ -676,6 +693,20 @@ void TeleOperation::current_velocity_callback_right(const geometry_msgs::TwistSt
     }
 }
 
+void TeleOperation::IOStateCallback(const ur_msgs::IOStatesConstPtr &state)
+{
+    bool IOstate = state->digital_in_states[0].state;
+    if (IOstate)
+    {
+        iostates = 1;
+        ROS_INFO("1111111111111111111111...............");
+    }
+    else
+    {
+        iostates = 0;
+    }
+    // iostates = state->digital_in_states[0];
+}
 void TeleOperation::updateProbability()
 {
     float angle_right_xy = max(angle_right[0], angle_right[1]);

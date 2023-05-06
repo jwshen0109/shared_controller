@@ -10,6 +10,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <shared_controller/commandConfig.h>
 #include "omni_msgs/OmniButtonEvent.h"
+#include "ur_msgs/IOStates.h"
 #include "shared_controller/task_predictor.h"
 
 #include <termio.h>
@@ -32,6 +33,7 @@ struct dynamic_reconfigure_params
 {
     float delta_step = 0.0;
     double scale = 0.1;
+    double scale1 = 2;
     float eta_p = 0.0;
     float eta_v = 0.0;
     float kp = 0.0;
@@ -112,6 +114,10 @@ public:
 
     void singlePointForceCallback(const std_msgs::Float64MultiArrayConstPtr &last_msg);
 
+    void newRetractorCallback(const std_msgs::Float64MultiArrayConstPtr &last_msgs);
+
+    void IOStateCallback(const ur_msgs::IOStatesConstPtr &state);
+
     vector<float> forceToMotionControl(float retractor_nForce);
 
     void forceFeedback(float fz);
@@ -183,6 +189,8 @@ private:
     ros::Subscriber sub_current_velocity_left;
     ros::Subscriber sub_current_velocity_right;
     ros::Subscriber single_point_force_sub;
+    ros::Subscriber newretractor_force_sub;
+    ros::Subscriber IOState_sub;
 
     geometry_msgs::PoseStamped last_pose_left;
     geometry_msgs::PoseStamped last_sigma_left;
@@ -225,6 +233,9 @@ private:
     int button_left = 0;
     int button_right = 0;
 
+    // iostates
+    int iostates = 0;
+
     // init state
     int first_flag_left = 0;
     int first_flag_right = 0;
@@ -264,6 +275,8 @@ private:
     vector<float> retractor_cur = vector<float>(3, 0.0);
     vector<float> vel = vector<float>(3, 0.0);
     vector<float> last_rightmaster = vector<float>(3, 0.0);
+    vector<float> net_newforce = vector<float>(2, 0.0);
+    vector<float> net_newTorque = vector<float>(2, 0.0);
 
     std::ofstream outFile;
     std::ofstream outVel;

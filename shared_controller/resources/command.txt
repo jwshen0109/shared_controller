@@ -1,2 +1,14 @@
-sudo chmod 777 /dev/bus/usb/001/018
+sigma UR 开机
+开启终端输入 lsusb查找sigma7端口号
+sudo chmod 777 /dev/bus/usb/001/端口号
+输入roslaunch sigma7 sigma.launch(单手) roslaunch sigma7 multi_sigma.launch(双手)
+新终端输入 roslaunch ur_robot_driver motion_controller.launch
+UR示教器加载程序,control.urp
+
+
+
+
+第一次启动 速度10%-20%.,正常运行40%左右.
+
+
 sudo chmod 777 /dev/ttyUSB0
